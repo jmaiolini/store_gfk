@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
+  <!-- enable visualizations -->
+  <arg name="rviz_enabled" default="true"/>
+<!--  <arg name="gui" value="false"/> disable gazebo -->
+
   <!-- robot args -->
   <arg name="laser_model"  default="sick-571"/>
   <arg name="rgbd_sensors"  default="false"/>
@@ -17,6 +21,7 @@
       <arg name="laser_model" value="$(arg laser_model)"/>
       <arg name="rgbd_sensors" value="$(arg rgbd_sensors)"/>
       <arg name="gzpose" value="$(arg gzpose)"/>
+<!--      <arg name="gui" value="$(arg gui)"/> TODO in their launch file-->
     </include>
   </group>
 
@@ -42,4 +47,8 @@
     <arg name="simple_sim_model"  value="$(arg simple_sim_model)"/>
   </include>
 
+<!-- spawn robot in rviz -->
+<group if="$(arg rviz_enabled)">
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find store_gfk)/config/rviz/default.rviz" />
+ </group>
 </launch>

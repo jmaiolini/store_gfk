@@ -20,6 +20,11 @@
   <xacro:include filename="$(find pmb2_description)/urdf/objects/cover.urdf.xacro"/>
   <xacro:include filename="$(find pmb2_description)/urdf/objects/antenna.urdf.xacro"/>
 
+  <!-- add support for RGBD cameras-->
+  <xacro:include filename="$(find store_gfk)/robot_description/custom/support.urdf.xacro"/>
+  <!-- RGBD cameras -->
+<!--  <xacro:include filename="$(find store_gfk)/robot_description/custom/RGBDs.urdf.xacro"/>-->
+
   <!-- Wheel characteristics -->
   <xacro:property name="wheel_radius"     value="0.0985"/>
   <xacro:property name="wheel_width"      value="0.040"/>
@@ -96,6 +101,10 @@
       <origin xyz="-0.201 -0.1062 0.195" rpy="0 0 0"/>
     </xacro:antenna>
 
+<!-- support -->
+
+<xacro:support name="${name}_support" parent="${name}_link"/>
+
     <!-- IMU -->
     <!-- @todo pmb2_hardware_gazebo needs an IMU!  -->
     <xacro:imu_sensor name="${name}_imu" parent="${name}_link" update_rate="100.0">
@@ -114,5 +123,7 @@
     <xacro:caster side="back_left"   radius="${caster_radius}" width="${caster_width}" separation_x="${-caster_separation_x}" separation_y="${-caster_separation_y}" offset_x="${caster_offset_x}" offset_y="${caster_offset_y}" offset_z="${caster_offset_z}" parent="${name}"/>
 
   </xacro:macro>
+
+
 
 </robot>
