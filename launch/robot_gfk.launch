@@ -9,6 +9,9 @@
   <arg name="simple_sim_model" default="false"/>
 
   <!-- spawn Tiago-Base robot in simulation -->
+
+<!-- launches the robot model/description and spawn it in gazebo and also the gazebo controllers  -->
+<!-- spawn Tiago-Base robot in simulation -->
   <group unless="$(arg simple_sim_model)">
     <include file="$(find pmb2_gazebo)/launch/pmb2_spawn.launch">
       <arg name="laser_model" value="$(arg laser_model)"/>
@@ -30,7 +33,10 @@
 
   </group>
 
-  <!-- bring up Tiago-Base robot -->
+  <!-- bring up Tiago-Base (controllers, robot state publisher and twist mux) -->
+
+<!-- robot state publisher calculates the forward kinematics of the robot and publish the results on the tf given the robot description (links and joints) -->
+<!-- twist is needed when there are more than a single source to move a robot so that the mux gives right priority -->
   <include file="$(find pmb2_gazebo)/launch/simulation_pmb2_bringup.launch">
     <arg name="public_sim"  value="$(arg public_sim)"/>
     <arg name="simple_sim_model"  value="$(arg simple_sim_model)"/>
