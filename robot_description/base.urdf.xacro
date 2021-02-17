@@ -23,7 +23,11 @@
   <!-- add support for RGBD cameras-->
   <xacro:include filename="$(find store_gfk)/robot_description/custom/support.urdf.xacro"/>
   <!-- RGBD cameras -->
-<!--  <xacro:include filename="$(find store_gfk)/robot_description/custom/RGBDs.urdf.xacro"/>-->
+    <xacro:include filename="$(find store_gfk)/robot_description/custom/cameras/cameras.urdf.xacro"/>
+  <!-- RGB -->
+  <!--  <xacro:include filename="$(find store_gfk)/robot_description/custom/elp_rgb.urdf.xacro"/>-->
+  <!-- -D -->
+  <!--  <xacro:include filename="$(find store_gfk)/robot_description/custom/structure_sensor.urdf.xacro"/>-->
 
   <!-- Wheel characteristics -->
   <xacro:property name="wheel_radius"     value="0.0985"/>
@@ -101,9 +105,12 @@
       <origin xyz="-0.201 -0.1062 0.195" rpy="0 0 0"/>
     </xacro:antenna>
 
-<!-- support -->
+    <!-- support -->
 
-<xacro:support name="${name}_support" parent="${name}_link"/>
+    <xacro:support name="${name}_support" parent="${name}_link"/>
+
+    <!-- cameras -->
+<!--    <xacro:support name="${name}_camera" parent="${name}_support"/>-->
 
     <!-- IMU -->
     <!-- @todo pmb2_hardware_gazebo needs an IMU!  -->
