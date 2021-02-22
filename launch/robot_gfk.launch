@@ -2,7 +2,7 @@
 
 <launch>
   <!-- enable visualizations -->
-  <arg name="rviz_enabled" default="true"/>
+  <arg name="rviz_enabled" default="false"/>
 <!--  <arg name="gui" value="false"/> disable gazebo -->
 
   <!-- robot args -->
