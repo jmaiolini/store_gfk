@@ -4,6 +4,8 @@
   
   <arg name="public_sim"   default="true"/>
 
+  <arg name="rviz_enabled" default="false"/>
+
   <arg name="world"  default="hassloch"/>
   <arg name="laser_model"  default="sick-571"/>
   <arg name="rgbd_sensors"  default="false"/>
@@ -47,8 +49,11 @@
       <arg name="rgbd_sensors" value="$(arg rgbd_sensors)"/>
     </include>
 
-    <node name="rviz" pkg="rviz" type="rviz" if="$(arg rviz)"
+    <group if="$(arg rviz_enabled)">
+      <node name="rviz" pkg="rviz" type="rviz" if="$(arg rviz)"
           args="-d $(find store_gfk)/config/rviz/mapping.rviz"/>
+    </group>
+
   </group>
  
 </launch>
