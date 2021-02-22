@@ -14,7 +14,7 @@
   <env name="GAZEBO_RESOURCE_PATH" value="$(arg extra_gz_resource_path):$(find store_gfk)/worlds:$(find store_gfk):$(optenv GAZEBO_RESOURCE_PATH)"/>
 
   <!-- start up empty world as base -->
-  <include file="$(find store_gfk)/launch/empty_world.launch">
+  <include file="$(find store_gfk)/launch/visualization/empty_world.launch">
     <!-- world_name is relative to directories in GAZEBO_RESOURCE_PATH-->
     <arg name="world_name" value="worlds/$(arg world).world"/>
     <arg name="extra_gazebo_args" value="$(arg extra_gazebo_args)"/>
