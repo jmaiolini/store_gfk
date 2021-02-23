@@ -35,13 +35,13 @@
       <link name='walls'>
       <!-- to set the right pose: -5*x_scale, -5*y_scale since is not possible to parametrize it-->
       <!-- <pose>-25.0000000 -25.0000000 0.000000 0.000000 0.000000 0.000000</pose> workaround for old model -->
-      <pose>-100.0000000 -100.0000000 0.000000 0.000000 0.000000 0.000000</pose>
+      <pose>-10.0000000 -10.0000000 0.000000 0.000000 0.000000 0.000000</pose>
         <collision name='collision'>
           <geometry>
             <mesh>
               <uri>model://hassloch/meshes/hassloch.dae</uri>
 <!--            <scale>5.0 5.0 8.0</scale> workaround for old model -->
-              <scale>10000.0 10000.0 10000.0 </scale>
+<!--              <scale>10.0 10.0 10.0 </scale>-->
             </mesh>
           </geometry>
           <max_contacts>10</max_contacts>
@@ -60,7 +60,7 @@
             <mesh>
               <uri>model://hassloch/meshes/hassloch.dae</uri>
 <!--              <scale>5.0 5.0 8.0</scale> workaround for old model -->
-              <scale>10000.0 10000.0 10000.0 </scale>
+<!--              <scale>10.0 10.0 10.0 </scale>-->
             </mesh>
           </geometry>
           <cast_shadows>0</cast_shadows>
