@@ -6,14 +6,14 @@ This repository uses already available ROS robots and adds some cameras on them 
 ### TIAGo-base
 * Follow the official installation of the robot [here](http://wiki.ros.org/Robots/PMB-2/Tutorials/Installation/PMB2Simulation) and install it into the ROS workspace.
 * Clone this repository in the same workspace and build both
-* Comment and modify the line as shown
+* Comment and add/modify the line as shown
 ```bash
 <!--  <xacro:include filename="$(find pmb2_description)/urdf/base/base.urdf.xacro"/> -->
 <xacro:include filename="$(find store_gfk)/robot_description/base.urdf.xacro"/>
 ```
-in the file located at
+in the file 
 ```bash
-~/<your_workspace>/src/pmb2_robot/pmb2_description/
+~/<your_workspace>/src/pmb2_public_ws/src/pmb2_robot/pmb2_description/urdf/base/base_sensors.urdf.xacro
 ```
 * Use the following command to spawn the robot within the store map
 ```bash
