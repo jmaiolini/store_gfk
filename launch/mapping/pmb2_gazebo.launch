@@ -3,7 +3,7 @@
 <launch>
   <arg name="laser_model"  default="sick-571"/>
   <arg name="rgbd_sensors"  default="false"/>
-  <arg name="world"  default="small_office"/>  <!-- empty, small_office, ... (see ../worlds) -->
+  <arg name="world"  default="hassloch"/> 
   <arg name="gzpose" default="-x 0.0 -y 0.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0"/>
   <arg name="gui" default="true"/>
   <arg name="debug" default="false"/>
