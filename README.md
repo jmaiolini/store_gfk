@@ -39,6 +39,16 @@ sudo apt install ros-melodic-teleop-twist-keyboard
 ```bash
 rosservice call /pal_map_manager/save_map "directory: '../../../<your_workspace>/src/store_gfk/map'"
 ```
+
+### Navigation
+The navigation step
+* Launch the navigation step: spawn robot and the store together with the map already created
+```bash
+roslaunch store_gfk nav_store_gfk.launch public_sim:=true lost:=true
+```
+the last argument can be omitted (deafult is false). If set to true it will spawn the robot in an unknown position (you can modify it in the nav_store_gfk.launch file). If you set it to be lost, you have to follow the instructions for the navigation step [here](http://wiki.ros.org/Robots/PMB-2/Tutorials/Navigation/Localization). Otherwise you can simply send a goal to the robot and it will find a path to it.
+
+
 ### Additional notes
 Pal Robotics uses a custom Rviz plugin for displaying covariance ellipses that is out-of-date. To avoid errors on the simulations (this however does not impact the simulation itself, just visualization) you should install an additional package in the workspace and build it
 ```bash
