@@ -19,8 +19,8 @@
   <arg name="extra_gazebo_args" default=""/>
 
 
-  <arg name="rviz"     default="true"/> <!-- enable rviz visualuzation-->
-  <arg name="gzclient" default="false"/> <!-- enable gazebo visualuzation-->
+  <arg name="rviz"     default="false"/> <!-- enable rviz visualuzation-->
+  <arg name="gzclient" default="true"/> <!-- enable gazebo visualuzation-->
 
   <group ns="$(arg namespace)">
 
@@ -35,7 +35,7 @@
       <arg name="extra_gazebo_args" value="$(arg extra_gazebo_args)"/>
     </include>
 
-    <include file="$(find store_gfk)/launch/mapping/navigation.launch">
+    <include file="$(find store_gfk)/launch/mapping/mapping.launch">
       <arg name="state"          value="mapping"/>
       <arg name="mapping"        value="$(arg mapping)"/>
       <arg name="octomap"        value="$(arg octomap)"/>

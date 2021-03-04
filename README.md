@@ -35,7 +35,10 @@ I prefer this solution with respect to the classic key_teleop. To install this p
 ```bash
 sudo apt install ros-melodic-teleop-twist-keyboard
 ```
-
+* Once done, to save the map in the right folder run
+```bash
+rosservice call /pal_map_manager/save_map "directory: '../../../<your_workspace>/src/store_gfk/map'"
+```
 ### Additional notes
 Pal Robotics uses a custom Rviz plugin for displaying covariance ellipses that is out-of-date. To avoid errors on the simulations (this however does not impact the simulation itself, just visualization) you should install an additional package in the workspace and build it
 ```bash
