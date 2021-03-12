@@ -5,7 +5,8 @@
   <env name="LC_NUMERIC" value="C" />
 
   <!-- start up world -->
-  <include file="$(find store_gfk)/launch/visualization/world_gfk.launch"> </include>
+  <include file="$(find store_gfk)/launch/visualization/world_gfk.launch">
+ </include>
 
   <!-- start up robot -->
   <include file="$(find store_gfk)/launch/visualization/robot_gfk.launch"> </include>
