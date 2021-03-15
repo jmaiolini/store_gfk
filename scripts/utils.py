@@ -5,7 +5,13 @@ import sys
 import os.path
 import rospkg
 
+def print_usage(exit_code = 0):
+    print '''Usage: rosrun store_gfk wpoints_generator.py <filename>
+    
+    - <filename> of store you are inspecting must be a 
+    json file under trajectories/<store_name>/ directory'''
 
+    sys.exit(exit_code)
 
 def load_trajectory(filename):
     rospack = rospkg.RosPack()
@@ -35,7 +41,7 @@ def transform_waypoints(store_waypoints):
     [x_off, y_off] = traj_meter_shift(x_off_px, y_off_px, store_width_px, store_height_px,store_width_m, store_height_m)
 
     for coord in store_waypoints: #dict type
-        new_coord = tranform_position( coord['x'], coord['y'], x_off, y_off, store_width_m, store_height_m )S
+        new_coord = tranform_position( coord['x'], coord['y'], x_off, y_off, store_width_m, store_height_m )
         robot_waypoints.append( new_coord )
 
     print(robot_waypoints)

@@ -8,7 +8,7 @@
   <arg name="rgbd_sensors"  default="false"/>
 
   <arg name="lost" default="false"/>
-  <arg name="gzpose" default="-x 0.0  -y   0.0 -z  0.0   -R 0.0 -P 0.0 -Y  0.0" unless="$(arg lost)"/>
+  <arg name="gzpose" default="-x 5.0  -y   5.0 -z  0.0   -R 0.0 -P 0.0 -Y  0.0" unless="$(arg lost)"/>
   <arg name="gzpose" default="-x 5.0 -y 7.0 -z 0.0 -R 0.0 -P 0.0 -Y 70.0" if="$(arg lost)"/>
 
   <arg name="planner"        default="base"/>
@@ -18,8 +18,8 @@
   <arg name="map"            default="$(find store_gfk)/map/"/>
   <arg name="octomap"        default="false"/>
 
-  <arg name="rviz"     default="true"/>
-  <arg name="gzclient" default="true"/>
+  <arg name="rviz"     default="true"/> <!-- enable rviz -->
+  <arg name="gzclient" default="false"/> <!-- enable gazebo -->
   <arg name="recording" default="false"/>
   <arg name="extra_gazebo_args" default=""/>
   <arg name="simple_sim_model" default="false"/>
