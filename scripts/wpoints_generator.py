@@ -11,8 +11,10 @@ class generator:
 
     def __init__(self, filename):
         self.sub = rospy.Subscriber("chatter",String,self.callback)
-        print(filename)
-        self.trajectory = utils.load_trajectory(filename)
+        
+        self.full_trajectory = utils.load_trajectory(filename)
+
+
 
 
     def callback(self, data):
