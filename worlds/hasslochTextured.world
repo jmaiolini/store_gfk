@@ -33,9 +33,7 @@
     <model name='hassloch'>
       <static>1</static>
       <link name='walls'>
-      <!-- to set the right pose: -5*x_scale, -5*y_scale since is not possible to parametrize it-->
-      <!-- <pose>-25.0000000 -25.0000000 0.000000 0.000000 0.000000 0.000000</pose> workaround for old model -->
-      <pose>-5.0 -5.0 0.0 0.0 0.0 0.0</pose> <!-- shifting the map to do not collide with the robot that spawns at (0,0)-->
+      <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose> 
         <collision name='collision'>
           <geometry>
             <mesh>
