@@ -2,8 +2,8 @@
 
 <launch>
   <!-- enable visualizations -->
-  <arg name="rviz_enabled" default="false"/>
-<!--  <arg name="gui" value="false"/> disable gazebo -->
+  <arg name="rviz_enabled" default="true"/>
+<!--  <arg name="gui" value="false"/> -->
 
   <!-- robot args -->
   <arg name="laser_model"  default="sick-571"/>
@@ -21,7 +21,7 @@
       <arg name="laser_model" value="$(arg laser_model)"/>
       <arg name="rgbd_sensors" value="$(arg rgbd_sensors)"/>
       <arg name="gzpose" value="$(arg gzpose)"/>
-<!--      <arg name="gui" value="$(arg gui)"/> TODO in their launch file-->
+<!--      <arg name="gui" value="$(arg gui)"/> -->
     </include>
   </group>
 

@@ -9,6 +9,6 @@
  </include>
   
   <!-- start up robot -->
-<!--  <include file="$(find store_gfk)/launch/visualization/robot_gfk.launch"> </include>-->
+  <include file="$(find store_gfk)/launch/visualization/robot_gfk.launch"> </include>
 
 </launch>
