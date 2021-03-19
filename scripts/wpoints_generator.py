@@ -8,21 +8,25 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionFeedb
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan
-import utils
+from utils import Utils
+import visual_tests
 
 class trajectoryGenerator:
 
     def __init__(self, filename, debug_mode=False):
 
+        utils = Utils()
         #transform and load current trajectory
-        self.full_trajectory, x_ratio, y_ratio = utils.load_trajectory(filename)
+        self.full_trajectory = utils.load_trajectory(filename)
 
         if debug_mode:
-            utils.check_traj_correspondences(self.full_trajectory, filename, x_ratio, y_ratio) #find better way to pass ratios
+            x_ratio, y_ratio = utils.get_ratios()
+            radious = utils.get_goal_tollerance_r()
+            visual_tests.check_traj_correspondences(self.full_trajectory, filename, x_ratio, y_ratio)
+            # visual_tests.check_radious(radious)
         
-        sys.exit(0)
-        #with this parameter we select how far the robot can stop if the goal is inside a wall
-        self.goal_tollerance = 1 #radious in meters
+            sys.exit(0)
+        
 
         #ROS interface
         #action for move_base
@@ -91,7 +95,7 @@ def main():
     args = rospy.myargv()
     
     if len(args) != 2:
-        utils.print_usage()
+        Utils.print_usage(1)
     rospy.init_node('wpoints_generator', anonymous=True)
 
     robot_navigation = trajectoryGenerator(args[1], True)
