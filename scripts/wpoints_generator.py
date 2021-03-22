@@ -21,9 +21,10 @@ class trajectoryGenerator:
 
         if debug_mode:
             x_ratio, y_ratio = utils.get_ratios()
-            radious = utils.get_goal_tollerance_r()
+            radius = utils.get_goal_tollerance_r()
             visual_tests.check_traj_correspondences(self.full_trajectory, filename, x_ratio, y_ratio)
-            # visual_tests.check_radious(radious)
+            visual_tests.check_radious(self.full_trajectory, filename, radius)
+            visual_tests.check_map()
         
             sys.exit(0)
         
@@ -84,10 +85,10 @@ class trajectoryGenerator:
         print("\n")
         
     def map_cb(self,data):
-        print("Getting map data.\n")
+        print(str(data.info))
 
     def laser_cb(self,data):
-        self.laser_msg = data.data
+        self.laser_msg = data
 
 
 def main():
@@ -98,7 +99,7 @@ def main():
         Utils.print_usage(1)
     rospy.init_node('wpoints_generator', anonymous=True)
 
-    robot_navigation = trajectoryGenerator(args[1], True)
+    robot_navigation = trajectoryGenerator(args[1], False)
     robot_navigation.start()
 
     

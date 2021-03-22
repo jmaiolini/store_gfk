@@ -2,6 +2,9 @@
 <launch>
   <arg name="namespace" default="/"/>
 
+  <arg name="store_name"   default="edeka"/>
+  <arg name="map_name"  default="map3"/> <!-- the name given when saving it-->
+
   <arg name="public_sim"   default="false"/>
   <arg name="world"  default="hasslochTextured"/> <!-- hasslochTextured has textures --> 
   <arg name="laser_model"  default="sick-571"/>
@@ -15,7 +18,7 @@
   <arg name="global_planner" default="global_planner"/>
   <arg name="local_planner"  default="$(eval 'teb' if arg('public_sim') else 'pal')"/> 
   <arg name="localization"   default="amcl"/>
-  <arg name="map"            default="$(find store_gfk)/map/"/>
+  <arg name="map"            default="$(find store_gfk)/maps/$(arg store_name)/$(arg map_name)"/>
   <arg name="octomap"        default="false"/>
 
   <arg name="rviz"     default="false"/> <!-- enable rviz -->

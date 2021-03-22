@@ -37,7 +37,7 @@ class Utils:
         self.img_height = 1210
 
         #with this parameter we select how far the robot can stop if the goal is inside a wall
-        self.goal_tollerance = 1 #radious in meters
+        self.goal_tollerance = 1 #radius in meters
 
         #TODO need also pixels and map meter sizes to calculate ratio. For now hardcoded
 
@@ -106,8 +106,8 @@ class Utils:
         return x_m,y_m
 
     def meters2pixels(self,x_m,y_m):
-        x_px = x_m / self.px_m_ratio_x
-        y_px = y_m / self.px_m_ratio_y
+        x_px = int(x_m / self.px_m_ratio_x)
+        y_px = int(y_m / self.px_m_ratio_y)
 
         return x_px,y_px
 
@@ -116,7 +116,7 @@ class Utils:
         x_map = p_x * self.px_m_ratio_x
         y_map = self.store_height - p_y * self.px_m_ratio_y
 
-        return x_m,y_m
+        return x_map,y_map
     #changes coordinates of a point in pixels from map to image coordinates
     def map2image(self,p_x,p_y):
         x_img = int(p_x / self.px_m_ratio_x)
