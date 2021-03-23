@@ -54,7 +54,15 @@ Alternatively you can modify these two parameters in the launch file directly by
 ```bash
 roslaunch store_gfk nav_store_gfk.launch public_sim:=true lost:=true store_name:=edeka map_name:=map
 ```
-Remark: if you are in the Mapping step, calling again this service will cause an overwrite of the saved map and not an update.
+#### Sending goals
+It is possible to enable the trajectory generation directly from the above launch file by enable it or by command line or in the launch itself (param ```bash generator_on:=true```). This will cause the robot to immediately start to follow the desired waypoints.
+Alternatively you can let it disabled (default) and launch directly the script as
+```bash
+rosrun store_gfk wpoints_generator.py <trajectory_filename>
+```
+TODO add the other required args to the py script
+
+
 ### Additional notes
 Pal Robotics uses a custom Rviz plugin for displaying covariance ellipses that is out-of-date. To avoid errors on the simulations (this however does not impact the simulation itself, just visualization) you should install an additional package in the workspace and build it
 ```bash

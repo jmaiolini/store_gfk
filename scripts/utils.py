@@ -78,7 +78,6 @@ class Utils:
             new_coord = self.tranform_position( coord['x'], coord['y'])
             robot_waypoints.append( new_coord )
 
-        print(robot_waypoints)
         return robot_waypoints
         
     def tranform_position(self, x_traj, y_traj): 

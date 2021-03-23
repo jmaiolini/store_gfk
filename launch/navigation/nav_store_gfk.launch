@@ -4,6 +4,8 @@
 
   <arg name="store_name"   default="edeka"/>
   <arg name="map_name"  default="map3"/> <!-- the name given when saving it-->
+  <arg name="generator_on"  default="false"/> <!-- toggle if you want the generator to automatically start -->
+  <arg name="traj_filename"  default="edeka_1.json"/>
 
   <arg name="public_sim"   default="false"/>
   <arg name="world"  default="hasslochTextured"/> <!-- hasslochTextured has textures --> 
@@ -13,6 +15,7 @@
   <arg name="lost" default="false"/>
   <arg name="gzpose" default="-x 5.0  -y   5.0 -z  0.0   -R 0.0 -P 0.0 -Y  0.0" unless="$(arg lost)"/>
   <arg name="gzpose" default="-x 5.0 -y 7.0 -z 0.0 -R 0.0 -P 0.0 -Y 70.0" if="$(arg lost)"/>
+
 
   <arg name="planner"        default="base"/>
   <arg name="global_planner" default="global_planner"/>
@@ -74,4 +77,10 @@
             args="-d $(find pmb2_2dnav)/config/rviz/navigation.rviz"/>
     </group>
   </group>
+
+  <group if="$(arg generator_on)">
+      <node name="wpoints_generator" pkg="store_gfk" type="wpoints_generator.py" output="screen" 
+        args="$(traj_filename)"/>
+    </group> <!-- TODO: parametrize also the folder name in the py (which should be equal to the store name)-->
+
 </launch>

@@ -40,7 +40,9 @@ class trajectoryGenerator:
         self.laer_scan_sub = rospy.Subscriber("/scan",LaserScan, self.laser_cb)
         self.laser_msg = LaserScan()
         
-        
+        #set desired goal tolerances for the local planner (so not modify yaw since the robot will rotate at the end)
+        rospy.set_param("/move_base/TebLocalPlannerROS/xy_goal_tolerance",5) #meters (default 0.2)
+        rospy.set_param("/move_base/TebLocalPlannerROS/yaw_goal_tolerance", 6.28)
 
 
     def start(self):
@@ -81,11 +83,11 @@ class trajectoryGenerator:
     # ...
 
     def feedback_cb(self,feedback):
-        # rospy.loginfo("Feedback:%s" % str(feedback))
-        print("\n")
+        rospy.loginfo("Feedback:%s" % str(feedback))
+        a = 3
         
     def map_cb(self,data):
-        print(str(data.info))
+        a = 3
 
     def laser_cb(self,data):
         self.laser_msg = data
