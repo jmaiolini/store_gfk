@@ -4,8 +4,16 @@
 
   <arg name="store_name"   default="edeka"/>
   <arg name="map_name"  default="map3"/> <!-- the name given when saving it-->
-  <arg name="generator_on"  default="false"/> <!-- toggle if you want the generator to automatically start -->
-  <arg name="traj_filename"  default="edeka_1.json"/>
+  <arg name="generator_on"  default="true"/> <!-- toggle if you want the generator to automatically start -->
+  <arg name="traj_num"  default="1"/>
+  <!-- the initial pose has to be set dependingly on the store since we need to avoid collision with walls -->
+  <arg name="init_pose_x" default="5.0"/>
+  <arg name="init_pose_y" default="5.0"/>
+  <arg name="init_pose_Y" default="0.0"/>
+  <!-- to not break API with Pal Robotics -->
+  <arg name="init_pose" default="-x $(arg init_pose_x) -y $(arg init_pose_y) -z 0.0 -R 0.0 -P 0.0 -Y $(arg init_pose_Y)"/> 
+  <!-- set it as param to have it in the wpoint_generator even if is off-->
+  <param name="robot_initial_pose" value="$(arg init_pose_x) $(arg init_pose_y) $(arg init_pose_Y)"/>
 
   <arg name="public_sim"   default="false"/>
   <arg name="world"  default="hasslochTextured"/> <!-- hasslochTextured has textures --> 
@@ -13,9 +21,9 @@
   <arg name="rgbd_sensors"  default="false"/>
 
   <arg name="lost" default="false"/>
-  <arg name="gzpose" default="-x 5.0  -y   5.0 -z  0.0   -R 0.0 -P 0.0 -Y  0.0" unless="$(arg lost)"/>
-  <arg name="gzpose" default="-x 5.0 -y 7.0 -z 0.0 -R 0.0 -P 0.0 -Y 70.0" if="$(arg lost)"/>
-
+<!--  <arg name="gzpose" default="-x 5.0  -y   5.0 -z  0.0   -R 0.0 -P 0.0 -Y  0.0" unless="$(arg lost)"/>-->
+<!--  <arg name="gzpose" default="-x 5.0 -y 7.0 -z 0.0 -R 0.0 -P 0.0 -Y 70.0" if="$(arg lost)"/>-->
+  
 
   <arg name="planner"        default="base"/>
   <arg name="global_planner" default="global_planner"/>
@@ -38,7 +46,7 @@
       <arg name="world"  value="$(arg world)"/>
       <arg name="laser_model"  value="$(arg laser_model)"/>
       <arg name="rgbd_sensors" value="$(arg rgbd_sensors)"/>
-      <arg name="gzpose" value="$(arg gzpose)"/>
+      <arg name="gzpose" value="$(arg init_pose)"/>
       <arg name="public_sim" value="$(arg public_sim)"/>
       <arg name="gui"    value="$(arg gzclient)"/>
       <arg name="recording"  value="$(arg recording)"/>
@@ -80,7 +88,7 @@
 
   <group if="$(arg generator_on)">
       <node name="wpoints_generator" pkg="store_gfk" type="wpoints_generator.py" output="screen" 
-        args="$(traj_filename)"/>
-    </group> <!-- TODO: parametrize also the folder name in the py (which should be equal to the store name)-->
+        args="$(arg store_name) $(arg traj_num)"/>
+    </group> 
 
 </launch>

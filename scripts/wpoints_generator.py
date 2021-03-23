@@ -13,18 +13,24 @@ import visual_tests
 
 class trajectoryGenerator:
 
-    def __init__(self, filename, debug_mode=False):
+    def __init__(self, args, debug_mode=False):
 
         utils = Utils()
+        filename = args[1] + '/' + args[1] + '_' + args[2] + '.json'
+        print(filename)
+        
         #transform and load current trajectory
         self.full_trajectory = utils.load_trajectory(filename)
+        #this is done to transform goal from map to robot pose
+        #alternatively I think it cloud be done with TF
+        self.full_trajectory = utils.correct_trajectory(self.full_trajectory, rospy.get_param("robot_initial_pose"))  
 
         if debug_mode:
             x_ratio, y_ratio = utils.get_ratios()
             radius = utils.get_goal_tollerance_r()
             visual_tests.check_traj_correspondences(self.full_trajectory, filename, x_ratio, y_ratio)
             visual_tests.check_radious(self.full_trajectory, filename, radius)
-            visual_tests.check_map()
+            visual_tests.check_map() #modify call-site
         
             sys.exit(0)
         
@@ -97,11 +103,12 @@ def main():
     
     args = rospy.myargv()
     
-    if len(args) != 2:
+    if len(args) != 3:
         Utils.print_usage(1)
     rospy.init_node('wpoints_generator', anonymous=True)
-
-    robot_navigation = trajectoryGenerator(args[1], False)
+    print(args)
+    
+    robot_navigation = trajectoryGenerator(args, False)
     robot_navigation.start()
 
     

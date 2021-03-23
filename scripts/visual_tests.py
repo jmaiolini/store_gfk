@@ -53,7 +53,7 @@ def check_radious(robot_trajectory, filename,radius):
 
     utils = Utils()
     rospack = rospkg.RosPack()
-    filepath = rospack.get_path('store_gfk') + '/trajectories/edeka/' + filename
+    filepath = rospack.get_path('store_gfk') + '/trajectories/' + filename
     filepath = os.path.splitext(filepath)[0]+'.jpg'
     
     robot_stops_img = cv2.imread(filepath,1)

@@ -49,16 +49,23 @@ class Utils:
 
     @staticmethod
     def print_usage(exit_code=0):
-        print '''Usage: rosrun store_gfk wpoints_generator.py <filename>
-        
-        - <filename> of store you are inspecting must be a 
-        json file under trajectories/<store_name>/ directory'''
+        print '''Usage: rosrun store_gfk wpoints_generator.py <store_name> <traj_num> 
+
+        - <store_name> the store name you want to inspecting under 
+                       trajectories/ directory
+
+        - <traj_num> number of the trajectory under trajectories/<store_name> 
+                     you want to perform.
+          Assumption: trajectories are saved as <store_name>_<traj_num>.json
+          
+        Example: rosrun store_gfk wpoints_generator.py edeka 1 
+        '''
 
         sys.exit(exit_code)
 
     def load_trajectory(self, filename):
         rospack = rospkg.RosPack()
-        filepath = rospack.get_path('store_gfk') + '/trajectories/edeka/' + filename
+        filepath = rospack.get_path('store_gfk') + '/trajectories/' + filename
 
     
         if os.path.exists(filepath):
@@ -79,6 +86,16 @@ class Utils:
             robot_waypoints.append( new_coord )
 
         return robot_waypoints
+
+    def correct_trajectory(self,traj, initial_pose):
+        corr_traj = list()
+        x,y,Y = initial_pose.split() 
+        
+        for pose in traj: #not acting on Yaw
+            corr_pose = (pose[0]-float(x), pose[1]-float(y))
+            corr_traj.append(corr_pose)
+        print(corr_traj)
+        return corr_traj
         
     def tranform_position(self, x_traj, y_traj): 
         # x_traj += x_off
@@ -133,7 +150,7 @@ class Utils:
     def check_traj_correspondences(self,robot_trajectory, filename, x_ratio, y_ratio):
 
         rospack = rospkg.RosPack()
-        filepath = rospack.get_path('store_gfk') + '/trajectories/edeka/' + filename
+        filepath = rospack.get_path('store_gfk') + '/trajectories/' + filename
         filepath = os.path.splitext(filepath)[0]+'.jpg'
         
         robot_traj_img = cv2.imread(filepath,1)
