@@ -139,35 +139,56 @@ class Utils:
         y_img = self.img_height - int(p_y / self.px_m_ratio_y)
 
         return x_img,y_img
-    
+
+    def is_good_goal(self, store_map, goal):
+        return store_map[goal[0]][goal[1]] == 0
+
+    def find_closest_goal(self, store_map, curr_goal,shift, desired_shift): #shift in meters
+        new_goal = curr_goal
+        feasible_found = False
+        kernel_size = 1
+        while (not feasible_found):
+            new_goal = self.find_feasible(store_map, curr_goal, kernel_size)
+            if new_goal == (0,0):
+                kernel_size+=2
+            else:
+                feasible_found = True #eventually will find a feasible on the boundaries
+        
+        #place the new point away from boundaries
+        if shift:
+            new_goal = self.shift_goal(curr_goal,new_goal,desired_shift)
+
+        return new_goal
+
+    def find_feasible(self, store_map, goal, kernel_size):
+        for i in range(goal[0]-kernel_size,goal[0]+kernel_size):
+            if i in range(goal[0]-kernel_size+2,goal[0]+kernel_size-2):
+                pass
+            for j in range(goal[1]-kernel_size,goal[1]+kernel_size):
+                if store_map[i][j] == 255:
+                    return (i,j)
+        return (0,0)
+
+    def shift_goal(self,goal,new_goal,shift):
+        shift = self.meters2pixels(shift,0)
+        
+        #calculate direction 
+        delta_x = goal[0] - new_goal[0]
+        delta_y = goal[1] - new_goal[1]
+        
+        shifted_x = new_goal[0] - cmp(delta_x,0) * int(shift[0])
+        shifted_y = new_goal[1] - cmp(delta_y,0) * int(shift[0])
+        
+        return (shifted_x,shifted_y)
+        
+
+      
+
     def get_ratios(self):
         return self.px_m_ratio_x, self.px_m_ratio_y
     
     def get_goal_tollerance_r(self):
         return self.goal_tollerance
 
-    ###### VISUAL TESTS (trajectories and recovery)
-    def check_traj_correspondences(self,robot_trajectory, filename, x_ratio, y_ratio):
-
-        rospack = rospkg.RosPack()
-        filepath = rospack.get_path('store_gfk') + '/trajectories/' + filename
-        filepath = os.path.splitext(filepath)[0]+'.jpg'
-        
-        robot_traj_img = cv2.imread(filepath,1)
-
-        for pose in robot_trajectory:
-            x,y = map2image(pose[0],pose[1])
-            robot_traj_img = cv2.circle(robot_traj_img, (x,y), radius=5, color=(0, 0, 255), thickness=-1)
-
-        robot_traj_img = cv2.circle(robot_traj_img, (22,24), radius=1, color=(0, 0, 255), thickness=-1)
-        robot_traj_img = cv2.circle(robot_traj_img, (1602-30,1210-26), radius=1, color=(0, 0, 255), thickness=-1)
-        cv2.namedWindow("Trajectories",cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("Trajectories", int(1602/2), int(1210/2))
-        cv2.imshow("Trajectories", robot_traj_img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        
-        cv2.imwrite("/home/majo/catkin_ws/src/store_gfk/prova.jpg",robot_traj_img)
-        
 
 
