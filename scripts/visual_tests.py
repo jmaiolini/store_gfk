@@ -86,6 +86,20 @@ def check_feasibility():
     img_rgb[100:200,50:90].fill(0)
     img_rgb[50+offset:90+offset,100+offset:200+offset].fill(0)
     img_rgb[100+offset:200+offset,50+offset:90+offset].fill(0)
+
+    #find rois
+    # Find contours, obtain bounding box, extract and save ROI
+    ROI_number = 0
+    cnts = cv2.findContours(img_rgb, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    for c in cnts:
+        x,y,w,h = cv2.boundingRect(c)
+        cv2.rectangle(image, (x, y), (x + w, y + h), (36,255,12), 2)
+        ROI = original[y:y+h, x:x+w]
+        ROI_number += 1
+
+    cv2.imwrite('/home/majo/catkin_ws/store_gfk/ROI_image.png',image)
+
     #shift in meters
     shift = 0.30 
     #desired waypoints
@@ -101,8 +115,12 @@ def check_feasibility():
         new_point = utils.find_closest_goal(img, point, True, shift)
         cv2.circle(img_rgb, new_point, radius=2, color=(255, 255, 0), thickness=2)
 
+
     cv2.namedWindow("Feasibility",cv2.WINDOW_NORMAL)
     cv2.imshow('Feasibility', img_rgb)
+    cv2.waitKey(0)
+    cv2.namedWindow("image",cv2.WINDOW_NORMAL)
+    cv2.imshow('image', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

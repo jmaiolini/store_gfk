@@ -123,7 +123,7 @@ def main():
     rospy.init_node('wpoints_generator', anonymous=True)
     print(args)
     
-    robot_navigation = trajectoryGenerator(args, True)
+    robot_navigation = trajectoryGenerator(args, False)
     robot_navigation.start()
 
     

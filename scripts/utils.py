@@ -154,7 +154,7 @@ class Utils:
             else:
                 feasible_found = True #eventually will find a feasible on the boundaries
         
-        #place the new point away from boundaries
+        #place the new point away from boundaries (TODO: make them to be aligned with rectangle)
         if shift:
             new_goal = self.shift_goal(curr_goal,new_goal,desired_shift)
 

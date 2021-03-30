@@ -3,11 +3,11 @@
   <arg name="namespace" default="/"/>
 
   <arg name="store_name"   default="edeka"/>
-  <arg name="map_name"  default="map3"/> <!-- the name given when saving it-->
+  <arg name="map_name"  default="trial"/> <!-- the name given when saving it-->
   <arg name="traj_num"  default="1"/>
-  <arg name="generator_on"  default="false"/> <!-- toggle if you want the generator to automatically start -->
-  <arg name="rviz"     default="false"/> <!-- enable rviz -->
-  <arg name="gzclient" default="true"/> <!-- enable gazebo -->
+  <arg name="generator_on"  default="true"/> <!-- toggle if you want the generator to automatically start -->
+  <arg name="rviz"     default="true"/> <!-- enable rviz -->
+  <arg name="gzclient" default="false"/> <!-- enable gazebo -->
 
   <!-- the initial pose has to be set dependingly on the store since we need to avoid collision with walls -->
   <arg name="init_pose_x" default="5.0"/>
