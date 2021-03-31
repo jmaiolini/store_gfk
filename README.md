@@ -37,7 +37,7 @@ sudo apt install ros-melodic-teleop-twist-keyboard
 ```
 * Once done, to save the map in the right folder run
 ```bash
-rosservice call /pal_map_manager/save_map "directory: '../../../<your_workspace>/src/store_gfk/map/<store_name>/<map_name>'"
+rosservice call /pal_map_manager/save_map "directory: '../../../<your_workspace>/src/store_gfk/maps/<store_name>/<map_name>'"
 ```
 ### Mapping (custom)
 Given that we have a perfectly known map of the store we should use this information.
@@ -45,10 +45,19 @@ First of all you need to generate a .dae file for the world. Place this file und
 **Remarks** 
 1. It is good practise to have a collision all over the boundaries of the store. This avoids the possibility for the global planner to plan a path for the desired waypoint which is outside the store (it can happen only if you map with the classic step though). 
 
-2. Given 1, if the robot is spawn at (0,0) as well as the map (by deafault) they will collide. As a workaround, simply shift the world of a desired offset by the parameter ```<pose>-5.0 -5.0 0.0 0.0 0.0 0.0</pose> ``` inside the world file. This however modifies only the gazebo part and does not shift the map for rviz that uses the package ```map_server```. To have coherency, after generating the custom map as will be explained next, in the .yaml file you have to also shift the pose of the same amount.
+2. Given 1, if the robot is spawn at (0,0) as well as the map (by deafault) they will collide. As a workaround, simply shift the world of a desired offset by the parameter ```<pose>-5.0 -5.0 0.0 0.0 0.0 0.0</pose>``` inside the world file. This however modifies only the gazebo part and does not shift the map for rviz that uses the package ```map_server```. To have coherency, after generating the custom map as will be explained next, in the .yaml file you have to also shift the pose of the same amount.
 
 #### Create a map
-Given the top-view image corresponding to the model .dae of before, the most straightforward way to generate a map is to crop this image to have exaclty the store. To do this, some useful functions can be found in ```/scripts/map_generator.py```
+Given the top-view image corresponding to the model .dae of before, the most straightforward way to generate a map is to crop this image to have exaclty the store. To do this, some useful functions can be found in ```/scripts/map_generator.py```. After this step, since our map is not probabilistic, is good to have a 2-valued map (white -> completely free cell, black -> completely occupied cell).
+Save it under the right directory as ```/store_gfk/maps/<store_name>/map.pgm``` and ```/store_gfk/maps/<store_name>/submap_0.pgm```. The other files that are required to have compability with the Pal Robotics packages can be copied directly from another map. The only file to be modified is the map.yaml:
+```bash
+image: submap_0.pgm
+resolution: //must be calculated by hand from the image
+origin: [//x_shift as Rmark 2., //y_shift as Rmark 2., 0.000000]
+negate: 0
+occupied_thresh: 0.65 //not used since not probabilistic map (leave it as it is)
+free_thresh: 0.196 //not used since not probabilistic map (leave it as it is)
+```
 
 ### Navigation
 The navigation step
