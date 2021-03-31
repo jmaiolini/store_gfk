@@ -2,7 +2,7 @@
 <launch>
   <arg name="namespace" default="/"/>
   
-  <arg name="public_sim"   default="false"/>
+  <arg name="public_sim"   default="true"/>
 
   <arg name="world"  default="hasslochTextured"/> <!-- hasslochTextured has textures --> 
   <arg name="laser_model"  default="sick-571"/>

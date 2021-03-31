@@ -33,7 +33,7 @@
     <model name='hassloch'>
       <static>1</static>
       <link name='walls'>
-      <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose> 
+      <pose>-5.0 -5.0 0.0 0.0 0.0 0.0</pose> 
         <collision name='collision'>
           <geometry>
             <mesh>

@@ -21,7 +21,7 @@ This enables to use our robot model consisting into the TIAGo-base + 4 additiona
 roslaunch store_gfk store_gfk.launch
 ```
 
-### Mapping
+### Mapping (classic step)
 The mapping step uses gmapping with the configurations of Tiago-Base.
 * Launch the mapping step: spawn robot and the store
 ```bash
@@ -39,20 +39,30 @@ sudo apt install ros-melodic-teleop-twist-keyboard
 ```bash
 rosservice call /pal_map_manager/save_map "directory: '../../../<your_workspace>/src/store_gfk/map/<store_name>/<map_name>'"
 ```
+### Mapping (custom)
+Given that we have a perfectly known map of the store we should use this information.
+First of all you need to generate a .dae file for the world. Place this file under ```/store_gfk/models/<store_name>/meshes/``` and create/modify the world under ```/store_gfk/worlds/```. Launch files have to be changed accordingly.
+**Remarks** 
+1. It is good practise to have a collision all over the boundaries of the store. This avoids the possibility for the global planner to plan a path for the desired waypoint which is outside the store (it can happen only if you map with the classic step though). 
+
+2. Given 1, if the robot is spawn at (0,0) as well as the map (by deafault) they will collide. As a workaround, simply shift the world of a desired offset by the parameter ```<pose>-5.0 -5.0 0.0 0.0 0.0 0.0</pose> ``` inside the world file. This however modifies only the gazebo part and does not shift the map for rviz that uses the package ```map_server```. To have coherency, after generating the custom map as will be explained next, in the .yaml file you have to also shift the pose of the same amount.
+
+#### Create a map
+Given the top-view image corresponding to the model .dae of before, the most straightforward way to generate a map is to crop this image to have exaclty the store. To do this, some useful functions can be found in ```/scripts/map_generator.py```
 
 ### Navigation
 The navigation step
 * Launch the navigation step: spawn robot and the store together with the map already created
 ```bash
-roslaunch store_gfk nav_store_gfk.launch public_sim:=true lost:=true
+roslaunch store_gfk nav_store_gfk.launch 
 ```
-The lost argument can be omitted (deafult is false). If set to true it will spawn the robot in an unknown position (you can modify it in the nav_store_gfk.launch file). If you set it to be lost, you have to follow the instructions for the navigation step [here](http://wiki.ros.org/Robots/PMB-2/Tutorials/Navigation/Localization). Otherwise you can simply send a goal to the robot and it will find a path to it.
+The lost argument of the tutorial can be omitted (deafult is false). If set to true it will spawn the robot in an unknown position (you can modify it in the nav_store_gfk.launch file). If you set it to be lost, you have to follow the instructions for the navigation step [here](http://wiki.ros.org/Robots/PMB-2/Tutorials/Navigation/Localization). Otherwise you can simply send a goal to the robot and it will find a path to it.
 
 If you want to load a specific map of a specific store you have to provide them as command line parameters as e.g.
 
 Alternatively you can modify these two parameters in the launch file directly by setting the desired default map.
 ```bash
-roslaunch store_gfk nav_store_gfk.launch public_sim:=true lost:=true store_name:=edeka map_name:=map
+roslaunch store_gfk nav_store_gfk.launch store_name:=edeka map_name:=map
 ```
 #### Sending goals
 You can run the follow

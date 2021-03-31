@@ -166,8 +166,24 @@ class Utils:
                 pass
             for j in range(goal[1]-kernel_size,goal[1]+kernel_size):
                 if store_map[i][j] == 255:
+                    self.check_neighborhood(store_map,i,j)
                     return (i,j)
         return (0,0)
+
+    def check_neighborhood(self,store_map,i,j):
+        #TODO check if we are in vertical or horizontal edge
+        k_size = 7
+        sobelx = cv2.Sobel(store_map[j-k_size:j+k_size,i-k_size:i+k_size],cv2.CV_64F,1,0,ksize=k_size)
+        sobely = cv2.Sobel(store_map[j-k_size:j+k_size,i-k_size:i+k_size],cv2.CV_64F,0,1,ksize=k_size)
+        sobelx_full = cv2.Sobel(store_map,cv2.CV_64F,1,0,ksize=3)
+        sobely_full = cv2.Sobel(store_map,cv2.CV_64F,0,1,ksize=3)
+        cv2.namedWindow("sobelx",cv2.WINDOW_NORMAL)
+        cv2.imshow("sobelx",sobelx_full)
+        cv2.namedWindow("sobely",cv2.WINDOW_NORMAL)
+        cv2.imshow("sobely",sobely_full)
+        cv2.namedWindow("image",cv2.WINDOW_NORMAL)
+        cv2.imshow("image",store_map)
+        cv2.waitKey(0)
 
     def shift_goal(self,goal,new_goal,shift):
         shift = self.meters2pixels(shift,0)
