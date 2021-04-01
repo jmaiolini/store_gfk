@@ -7,22 +7,6 @@ import rospkg
 import cv2
 import numpy as np
 
-#PROBLEM: we have mismatching coordinates as follows
-# reasoning to make it generic to images and stores.
-
-#   _____________________________
-#   |  ________________________  |
-#   | |                        | |
-#   | |                        | |
-#   | |                        | |
-#   | |________________________| |
-#   |____________________________|
-
-#we have that:
-# the outer is given by image pixels
-# the inner is given by the store map
-
-
 #TODO modify them based on the store (for now only store B available)
 # px_m_ratio_x = 0.026529338 #m/px WRONG
 # px_m_ratio_y = 0.02677686 #m/px WRONG
@@ -32,21 +16,36 @@ class Utils:
 
     def __init__(self): #to put in config eventually
 
+        self.goal_tollerance = 1
+
+        #trajectory image params
         self.planimetry_width = 42.5
         self.planimetry_height = 32.4
         self.img_width = 1602
         self.img_height = 1210
 
-        #with this parameter we select how far the robot can stop if the goal is inside a wall
-        self.goal_tollerance = 1 #radius in meters
+        #blender generated image params        
+        self.blender_store_width = 45.0
+        self.blender_store_height = 34.6
+        self.blender_img_width = 1192
+        self.blender_img_height = 918
 
-        #TODO need also pixels and map meter sizes to calculate ratio. For now hardcoded
-
+        #Image pixels and planimetry meters do not check in trajectory image. 
+        # For now this difference is hardcoded below
         self.px_m_ratio_x = self.planimetry_width / (self.img_width-22-30)
         self.px_m_ratio_y = self.planimetry_height / (self.img_height-24-26)
     
         self.store_width = self.img_width * self.px_m_ratio_x #42.5 
         self.store_height = self.img_height * self.px_m_ratio_y #32.4 
+
+        #TODO (for each store) proportions. Given a goal x,y in the trajectory image
+        #we have to transform it for the blender map
+        self.maps_x_ratio = self.blender_store_width / self.store_width 
+        self.maps_y_ratio = self.blender_store_height / self.store_height
+        #OK BUT :TODO RETRIEVE IT FROM MAP YAML
+        self.blender_px_m_ratio_x = self.blender_store_width / (self.blender_img_width)
+        self.blender_px_m_ratio_y = self.blender_store_height / (self.blender_img_height)
+
 
     @staticmethod
     def print_usage(exit_code=0):
@@ -141,12 +140,17 @@ class Utils:
 
         return x_img,y_img
 
+    def map2image_blender(self,p_x,p_y):
+        x_img = int(p_x / self.blender_px_m_ratio_x)
+        y_img = self.blender_img_height - int(p_y / self.blender_px_m_ratio_y)
+
+        return x_img,y_img
+
     def is_good_goal(self, store_map, goal):
         return store_map[goal[0]][goal[1]] == 0
 
     def find_closest_goal(self, store_map, curr_goal):
         new_goal = curr_goal
-        print("Starting from ",curr_goal[0], " ",curr_goal[1] )
         feasible_found = False
         kernel_size = 1
         while (not feasible_found):
@@ -165,7 +169,6 @@ class Utils:
                 pass
             for j in range(goal[1]-ksize,goal[1]+ksize):
                 if store_map[j][i] == 255:
-                    print("Found feasible at ",i, " ",j )
                     found_neigh,x,y = self.check_neighbors(store_map,i,j)
                     if found_neigh:
                         return (x,y)

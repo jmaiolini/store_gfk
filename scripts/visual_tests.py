@@ -16,37 +16,29 @@ def check_traj_correspondences( robot_trajectory, filename, x_ratio, y_ratio):
     utils = Utils()
     rospack = rospkg.RosPack()
     filepath = rospack.get_path('store_gfk') + '/trajectories/' + filename
+    blender_filename = rospack.get_path('store_gfk') + '/maps/edeka/trial/map.pgm'
 
     filename = os.path.splitext(filepath)[0]+'.jpg'
     robot_stops_img = cv2.imread(filename,1)
+    robot_stops_blender_img = cv2.imread(blender_filename,1)
 
     for pose in robot_trajectory:
+
+        pose_x_on_blender = utils.maps_x_ratio * pose[0]
+        pose_y_on_blender = utils.maps_y_ratio * pose[1]
+
         x,y = utils.map2image(pose[0],pose[1])
+        x_blender,y_blender = utils.map2image_blender(pose_x_on_blender,pose_y_on_blender)   
         robot_stops_img = cv2.circle(robot_stops_img, (x,y), radius=5, color=(0, 0, 255), thickness=-1)
+        robot_stops_blender_img = cv2.circle(robot_stops_blender_img, (x_blender,y_blender), radius=5, color=(0, 0, 255), thickness=-1)
+
 
     robot_stops_img = cv2.circle(robot_stops_img, (22,24), radius=1, color=(0, 0, 255), thickness=-1)
     robot_stops_img = cv2.circle(robot_stops_img, (1602-30,1210-26), radius=1, color=(0, 0, 255), thickness=-1)
     
     utils.show_img_and_wait_key("Trajectories",robot_stops_img)
+    utils.show_img_and_wait_key("Trajectories2",robot_stops_blender_img)
 
-    check_traj_blender_map(robot_trajectory,x_ratio,y_ratio)
-
-def check_traj_blender_map(robot_trajectory,x_ratio, y_ratio):
-    utils = Utils()
-    rospack = rospkg.RosPack()
-    filepath = rospack.get_path('store_gfk') + '/maps/edeka/trial/map.pgm' 
-    robot_stops_img = cv2.imread(filepath,1)
-
-    for pose in robot_trajectory:
-        x,y = utils.map2image(pose[0],pose[1]) #TODO!!
-        x += 5
-        y -= 5
-        robot_stops_img = cv2.circle(robot_stops_img, (x,y), radius=5, color=(0, 0, 255), thickness=-1)
-
-    robot_stops_img = cv2.circle(robot_stops_img, (22,24), radius=1, color=(0, 0, 255), thickness=-1)
-    robot_stops_img = cv2.circle(robot_stops_img, (1602-30,1210-26), radius=1, color=(0, 0, 255), thickness=-1)
-
-    utils.show_img_and_wait_key("Trajectories",robot_stops_img)
 
     
 def check_radious(robot_trajectory, filename,radius):
@@ -67,16 +59,6 @@ def check_radious(robot_trajectory, filename,radius):
 
 def check_feasibility():
     utils = Utils()
-    # img = np.zeros([512,512,1],dtype=np.uint8)
-    # img_rgb = np.zeros([512,512,3],dtype=np.uint8)
-    # img.fill(255)
-    # img_rgb.fill(255)
-    offset = 200
-    #occupied roi
-    # img[50:90,100:200].fill(0)
-    # img[100:200,50:90].fill(0)
-    # img[50+offset:90+offset,100+offset:200+offset].fill(0)
-    # img[100+offset:200+offset,50+offset:90+offset].fill(0)
 
     rospack = rospkg.RosPack()
     filepath = rospack.get_path('store_gfk') + '/maps/edeka/trial/map.pgm'
