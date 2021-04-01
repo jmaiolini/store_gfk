@@ -28,7 +28,7 @@ def check_traj_correspondences( robot_trajectory, filename, x_ratio, y_ratio):
         pose_y_on_blender = utils.maps_y_ratio * pose[1]
 
         x,y = utils.map2image(pose[0],pose[1])
-        x_blender,y_blender = utils.map2image_blender(pose_x_on_blender,pose_y_on_blender)   
+        x_blender,y_blender = utils.map2image_blender(pose_x_on_blender,pose_y_on_blender)  
         robot_stops_img = cv2.circle(robot_stops_img, (x,y), radius=5, color=(0, 0, 255), thickness=-1)
         robot_stops_blender_img = cv2.circle(robot_stops_blender_img, (x_blender,y_blender), radius=5, color=(0, 0, 255), thickness=-1)
 
@@ -73,10 +73,5 @@ def check_feasibility():
         cv2.circle(img_rgb, point, radius=3, color=(0, 0, 255), thickness=2)
         new_point = utils.find_closest_goal(img, point)
         cv2.circle(img_rgb, new_point, radius=3, color=(0, 255, 0), thickness=2)
-
-    # for point in inside_points2:
-    #     cv2.circle(img_rgb, point, radius=3, color=(0, 255, 255), thickness=2)
-    #     new_point = utils.find_closest_goal(img, point)
-    #     cv2.circle(img_rgb, new_point, radius=3, color=(255, 255, 0), thickness=2)
 
     utils.show_img_and_wait_key("Feasibility", img_rgb)

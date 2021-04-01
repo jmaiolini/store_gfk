@@ -42,10 +42,10 @@ class Utils:
         #we have to transform it for the blender map
         self.maps_x_ratio = self.blender_store_width / self.store_width 
         self.maps_y_ratio = self.blender_store_height / self.store_height
-        #OK BUT :TODO RETRIEVE IT FROM MAP YAML
+
+        #OK BUT :TODO RETRIEVE IT FROM MAP YAML (0.037721614)
         self.blender_px_m_ratio_x = self.blender_store_width / (self.blender_img_width)
         self.blender_px_m_ratio_y = self.blender_store_height / (self.blender_img_height)
-
 
     @staticmethod
     def print_usage(exit_code=0):
@@ -80,7 +80,6 @@ class Utils:
     def transform_waypoints(self, store_waypoints):
         robot_waypoints = list()
         
-        
         for coord in store_waypoints: #dict type
             new_coord = self.tranform_position( coord['x'], coord['y'])
             robot_waypoints.append( new_coord )
@@ -94,12 +93,9 @@ class Utils:
         for pose in traj: #not acting on Yaw
             corr_pose = (pose[0]+float(x), pose[1]+float(y))
             corr_traj.append(corr_pose)
-        print(corr_traj)
         return corr_traj
         
     def tranform_position(self, x_traj, y_traj): 
-        # x_traj += x_off
-        # y_traj += y_off
 
         x_map = x_traj 
         y_map = self.store_height - y_traj
@@ -145,6 +141,19 @@ class Utils:
         y_img = self.blender_img_height - int(p_y / self.blender_px_m_ratio_y)
 
         return x_img,y_img
+
+    #change reference (invert y axis) of a point in pixels
+    def map2image_pixels(self,p_x,p_y):
+        x = p_x
+        y = self.img_height - p_y
+
+        return x,y
+    #change reference (invert y axis) of a point in meters
+    def map2image_meters(self,p_x,p_y):
+        x = p_x
+        y = self.store_height - p_y
+       
+        return x,y
 
     def is_good_goal(self, store_map, goal):
         return store_map[goal[0]][goal[1]] == 0
