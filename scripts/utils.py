@@ -5,6 +5,7 @@ import sys
 import os.path
 import rospkg
 import cv2
+import numpy as np
 
 #PROBLEM: we have mismatching coordinates as follows
 # reasoning to make it generic to images and stores.
@@ -87,12 +88,12 @@ class Utils:
 
         return robot_waypoints
 
-    def correct_trajectory(self,traj, initial_pose):
+    def correct_trajectory(self,traj, map_shift):
         corr_traj = list()
-        x,y,Y = initial_pose.split() 
+        x,y,Y = map_shift.split() 
         
         for pose in traj: #not acting on Yaw
-            corr_pose = (pose[0]-float(x), pose[1]-float(y))
+            corr_pose = (pose[0]+float(x), pose[1]+float(y))
             corr_traj.append(corr_pose)
         print(corr_traj)
         return corr_traj
@@ -143,8 +144,9 @@ class Utils:
     def is_good_goal(self, store_map, goal):
         return store_map[goal[0]][goal[1]] == 0
 
-    def find_closest_goal(self, store_map, curr_goal,shift, desired_shift): #shift in meters
+    def find_closest_goal(self, store_map, curr_goal):
         new_goal = curr_goal
+        print("Starting from ",curr_goal[0], " ",curr_goal[1] )
         feasible_found = False
         kernel_size = 1
         while (not feasible_found):
@@ -153,58 +155,51 @@ class Utils:
                 kernel_size+=2
             else:
                 feasible_found = True #eventually will find a feasible on the boundaries
-        
-        #place the new point away from boundaries (TODO: make them to be aligned with rectangle)
-        if shift:
-            new_goal = self.shift_goal(curr_goal,new_goal,desired_shift)
-
+        if kernel_size == 1:
+            return curr_goal
         return new_goal
 
-    def find_feasible(self, store_map, goal, kernel_size):
-        for i in range(goal[0]-kernel_size,goal[0]+kernel_size):
-            if i in range(goal[0]-kernel_size+2,goal[0]+kernel_size-2):
+    def find_feasible(self, store_map, goal, ksize):
+        for i in range(goal[0]-ksize,goal[0]+ksize):
+            if i in range(goal[0]-ksize+2,goal[0]+ksize-2):
                 pass
-            for j in range(goal[1]-kernel_size,goal[1]+kernel_size):
-                if store_map[i][j] == 255:
-                    self.check_neighborhood(store_map,i,j)
-                    return (i,j)
+            for j in range(goal[1]-ksize,goal[1]+ksize):
+                if store_map[j][i] == 255:
+                    print("Found feasible at ",i, " ",j )
+                    found_neigh,x,y = self.check_neighbors(store_map,i,j)
+                    if found_neigh:
+                        return (x,y)
         return (0,0)
 
-    def check_neighborhood(self,store_map,i,j):
-        #TODO check if we are in vertical or horizontal edge
-        k_size = 7
-        sobelx = cv2.Sobel(store_map[j-k_size:j+k_size,i-k_size:i+k_size],cv2.CV_64F,1,0,ksize=k_size)
-        sobely = cv2.Sobel(store_map[j-k_size:j+k_size,i-k_size:i+k_size],cv2.CV_64F,0,1,ksize=k_size)
-        sobelx_full = cv2.Sobel(store_map,cv2.CV_64F,1,0,ksize=3)
-        sobely_full = cv2.Sobel(store_map,cv2.CV_64F,0,1,ksize=3)
-        cv2.namedWindow("sobelx",cv2.WINDOW_NORMAL)
-        cv2.imshow("sobelx",sobelx_full)
-        cv2.namedWindow("sobely",cv2.WINDOW_NORMAL)
-        cv2.imshow("sobely",sobely_full)
-        cv2.namedWindow("image",cv2.WINDOW_NORMAL)
-        cv2.imshow("image",store_map)
-        cv2.waitKey(0)
-
-    def shift_goal(self,goal,new_goal,shift):
-        shift = self.meters2pixels(shift,0)
-        
-        #calculate direction 
-        delta_x = goal[0] - new_goal[0]
-        delta_y = goal[1] - new_goal[1]
-        
-        shifted_x = new_goal[0] - cmp(delta_x,0) * int(shift[0])
-        shifted_y = new_goal[1] - cmp(delta_y,0) * int(shift[0])
-        
-        return (shifted_x,shifted_y)
-        
-
-      
+    def check_neighbors(self,store_map,i,j):
+        ksize = 10
+        left = store_map[j-ksize:j+ksize,i-ksize:i]
+        if np.average(left) == 255:
+            return 1,i-ksize,j
+        right = store_map[j-ksize:j+ksize,i: i+ksize]
+        if np.average(right) == 255:
+            return 1,i+ksize,j
+        top = store_map[j-ksize:j, i-ksize:i+ksize]
+        if np.average(top) == 255:
+            return 1,i,j-ksize
+        bottom = store_map[j:j+ksize, i-ksize:i+ksize]
+        if np.average(bottom) == 255:
+            return 1,i,j+ksize
+     
+        return 0,0,0
 
     def get_ratios(self):
         return self.px_m_ratio_x, self.px_m_ratio_y
     
     def get_goal_tollerance_r(self):
         return self.goal_tollerance
+
+    def show_img_and_wait_key(self,window_name,img):
+        cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(window_name, int(1602/2), int(1210/2))
+        cv2.imshow(window_name, img)
+        cv2.waitKey(0)
+        cv2.destroyWindow(window_name)
 
 
 

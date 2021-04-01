@@ -35,7 +35,7 @@ class trajectoryGenerator:
         else:
             #this is done to transform goal from map to robot pose
             #alternatively I think it cloud be done with TF
-            self.full_trajectory = utils.correct_trajectory(self.full_trajectory, rospy.get_param("robot_initial_pose"))  
+            self.full_trajectory = utils.correct_trajectory(self.full_trajectory, rospy.get_param("map_shift"))  
 
         
         # self.xy_tolerance = rospy.get_param("/move_base/TebLocalPlannerROS/xy_goal_tolerance")
