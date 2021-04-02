@@ -72,35 +72,30 @@ class trajectoryGenerator:
         self.goal.target_pose.pose.orientation.w = 1.0 #not sending orientation, we will rotate to align at the end
 
         counter = 0
+        shifted_x = 0.0
+        shifted_y = 0.0
         for waypoint in self.full_trajectory:
+
             if self.utils.is_good_goal(waypoint):
                 print("Feasible waypoint, proceeding")
-                # print("Waypoint n ", counter, "at", waypoint[0], waypoint[1])
-                # print("Or in pixels ", self.utils.meters2pixels(waypoint[0], waypoint[1]))
                 shifted_x, shifted_y = self.utils.shift_goal(waypoint,self.map_shift)
-                if self.send_wp(shifted_x, shifted_y):
-                    print 'Goal Reached! Moving to the next if any'
             else:
                 print("NOT Feasible waypoint, changing it")
                 # print("Waypoint n ", counter, "at", waypoint[0], waypoint[1], "not feasible")
                 # print("Or in pixels ", self.utils.meters2pixels(waypoint[0], waypoint[1]))
                 i,j = self.utils.meters2pixels(waypoint[0], waypoint[1])
+              
                 new_point = self.utils.find_closest_goal(self.utils.get_map_image(), (i,j))
+               
                 feasible_x,feasible_y = self.utils.pixels2meters(new_point[0],new_point[1])
+                
                 shifted_x, shifted_y = self.utils.shift_goal((feasible_x,feasible_y),self.map_shift)
+                
                 # print("NEW Waypoint n ", counter, "at",new_x,new_y)
                 # print("Or in pixels ", i,j)
-                if counter ==  2:
-                    f = open("/home/majo/catkin_ws/src/store_gfk/demofile2.txt", "a")
-                    f.write("original waypoint")
-                    f.write(waypoint)  
-                    f.write("i,j")
-                    f.write(i,j)                 
-                    f.write("feasible_x,feasible_y")
-                    f.write(feasible_x,feasible_y)
-                    f.close()
-                if self.send_wp(shifted_x, shifted_y):
-                    print 'Goal Reached! Moving to the next if any'
+
+            if self.send_wp(shifted_x, shifted_y):
+                print 'Goal Reached! Moving to the next if any'
                 
 
             counter = counter +1

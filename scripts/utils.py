@@ -221,24 +221,30 @@ class Utils:
         return corr_pose
 
     def is_good_goal(self, goal): #TODO parametrize based on size of robot base
-        ksize = 4 #for each side
+        ksize = 10 #for each side (based on robot radius)
         x = self.maps_x_ratio * goal[0]
         y = self.maps_y_ratio * goal[1]
         i,j = self.map2image(x,y)
-        patch = self.map_image[j-ksize:j+ksize,i-ksize:i+ksize,1]
-        print(patch)
+        patch = self.map_image[j-ksize:j+ksize,i-ksize:i+ksize]
+
         return np.average(patch) == 255
 
     def find_closest_goal(self, store_map, curr_goal):
         new_goal = curr_goal
         feasible_found = False
         kernel_size = 1
+
         while (not feasible_found):
             new_goal = self.find_feasible(store_map, curr_goal, kernel_size)
             if new_goal == (0,0):
                 kernel_size+=2
+                print("kernel size now ", kernel_size)
             else:
                 feasible_found = True #eventually will find a feasible on the boundaries
+        
+            if kernel_size > 30:
+                break
+
         if kernel_size == 1:
             return curr_goal
         return new_goal
@@ -248,14 +254,14 @@ class Utils:
             if i in range(goal[0]-ksize+2,goal[0]+ksize-2):
                 pass
             for j in range(goal[1]-ksize,goal[1]+ksize):
-                if store_map[j][i][1] == 255:
+                if store_map[j][i] == 255:
                     found_neigh,x,y = self.check_neighbors(store_map,i,j)
                     if found_neigh:
                         return (x,y)
         return (0,0)
 
     def check_neighbors(self,store_map,i,j):
-        ksize = 100
+        ksize = 20
         left = store_map[j-ksize:j+ksize,i-ksize:i]
         if np.average(left) == 255:
             print("MOVING TO THE LEFT")
@@ -287,7 +293,7 @@ class Utils:
             self.map_image = cv2.imread(filename)
         elif self.map_source == 1:
             filename = rospack.get_path('store_gfk') + '/maps/edeka/trial/map.pgm'
-            self.map_image = cv2.imread(filename)
+            self.map_image = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
 
     def get_map_image(self):
         return self.map_image
