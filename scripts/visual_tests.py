@@ -11,9 +11,9 @@ from utils import Utils
 #TODO: parametrize map path (need to add arg)
 
 ###### VISUAL TESTS (trajectories and recovery)
-def check_traj_correspondences( robot_trajectory, filename, x_ratio, y_ratio):
+def check_traj_correspondences( robot_trajectory, filename, map_source):
 
-    utils = Utils()
+    utils = Utils(filename, map_source)
     rospack = rospkg.RosPack()
     filepath = rospack.get_path('store_gfk') + '/trajectories/' + filename
     blender_filename = rospack.get_path('store_gfk') + '/maps/edeka/trial/map.pgm'
@@ -24,38 +24,25 @@ def check_traj_correspondences( robot_trajectory, filename, x_ratio, y_ratio):
 
     for pose in robot_trajectory:
 
-        pose_x_on_blender = utils.maps_x_ratio * pose[0]
-        pose_y_on_blender = utils.maps_y_ratio * pose[1]
+        x = utils.maps_x_ratio * pose[0]
+        y = utils.maps_y_ratio * pose[1]
 
-        x,y = utils.map2image(pose[0],pose[1])
-        x_blender,y_blender = utils.map2image_blender(pose_x_on_blender,pose_y_on_blender)  
-        robot_stops_img = cv2.circle(robot_stops_img, (x,y), radius=5, color=(0, 0, 255), thickness=-1)
-        robot_stops_blender_img = cv2.circle(robot_stops_blender_img, (x_blender,y_blender), radius=5, color=(0, 0, 255), thickness=-1)
-
-
-    robot_stops_img = cv2.circle(robot_stops_img, (22,24), radius=1, color=(0, 0, 255), thickness=-1)
-    robot_stops_img = cv2.circle(robot_stops_img, (1602-30,1210-26), radius=1, color=(0, 0, 255), thickness=-1)
-    
-    utils.show_img_and_wait_key("Trajectories",robot_stops_img)
-    utils.show_img_and_wait_key("Trajectories2",robot_stops_blender_img)
+        if utils.map_source == 0:
+            i,j = utils.map2image(pose[0],pose[1])   
+            robot_stops_img = cv2.circle(robot_stops_img, (i,j), radius=5, color=(0, 0, 255), thickness=-1)
+        elif utils.map_source == 1:
+            i,j = utils.map2image(x,y)
+            robot_stops_blender_img = cv2.circle(robot_stops_blender_img, (i,j), radius=3, color=(0, 0, 255), thickness=-1)
 
 
-    
-def check_radious(robot_trajectory, filename,radius):
+    robot_stops_img = cv2.circle(robot_stops_img, (22,24), radius=3, color=(0, 0, 255), thickness=-1)
+    robot_stops_img = cv2.circle(robot_stops_img, (1602-30,1210-26), radius=3, color=(0, 0, 255), thickness=-1)
 
-    utils = Utils()
-    rospack = rospkg.RosPack()
-    filepath = rospack.get_path('store_gfk') + '/trajectories/' + filename
-    filepath = os.path.splitext(filepath)[0]+'.jpg'
-    
-    robot_stops_img = cv2.imread(filepath,1)
+    if utils.map_source == 0:
+        utils.show_img_and_wait_key("Original Trajectories",robot_stops_img)
+    elif utils.map_source == 1:
+        utils.show_img_and_wait_key("Trajectories on blender map",robot_stops_blender_img)
 
-    for pose in robot_trajectory:
-        x,y = utils.map2image(pose[0],pose[1])
-        r = utils.meters2pixels(radius,0)[0]
-        robot_stops_img = cv2.circle(robot_stops_img, (x,y), radius=r, color=(255, 0, 0), thickness=2)
-
-    utils.show_img_and_wait_key("Goals Tollerance",robot_stops_img)
 
 def check_feasibility():
     utils = Utils()
@@ -68,10 +55,32 @@ def check_feasibility():
 
     #desired waypoints
     inside_points = [(150,355), (600,735), (680,200),(500,500)]
-    # inside_points2 = [(53,110),(193,70),(78+offset,183+offset),(150+offset,70+offset)]
+
     for point in inside_points:
         cv2.circle(img_rgb, point, radius=3, color=(0, 0, 255), thickness=2)
         new_point = utils.find_closest_goal(img, point)
         cv2.circle(img_rgb, new_point, radius=3, color=(0, 255, 0), thickness=2)
 
     utils.show_img_and_wait_key("Feasibility", img_rgb)
+
+
+def show_good_bad_points(waypoints,map_source):
+    utils = Utils()
+    averages = []
+    ksize = 4 #for each side
+    rospack = rospkg.RosPack()
+    filename = rospack.get_path('store_gfk') + '/maps/edeka/trial/map.pgm'
+    img = cv2.imread(filename,cv2.IMREAD_COLOR)
+
+    for waypoint in waypoints:
+        x = utils.maps_x_ratio * waypoint[0]
+        y = utils.maps_y_ratio * waypoint[1]
+
+        i,j = utils.map2image(x,y)
+       
+        patch = img[j-ksize:j+ksize,i-ksize:i+ksize,1]
+        img[j-ksize:j+ksize,i-ksize:i+ksize] = (0,0,255)
+        
+        averages.append(np.average(patch))
+
+    utils.show_img_and_wait_key("Wpoints goodness", img)

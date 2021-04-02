@@ -16,32 +16,41 @@ class trajectoryGenerator:
 
     def __init__(self, args, debug_mode=False):
 
-        utils = Utils()
         filename = args[1] + '/' + args[1] + '_' + args[2] + '.json'
 
-        #transform and load current trajectory
-        self.full_trajectory = utils.load_trajectory(filename)
+        # choose between 
+        map_source = args[3]
+
+        self.utils = Utils(filename, int(map_source))
+
+        #load current trajectory and tranform it
+        self.full_trajectory = self.utils.load_trajectory()
+        self.utils.set_map_image() #to check if the given goal is good 
         
         if debug_mode:
-            x_ratio, y_ratio = utils.get_ratios()
-            radius = utils.get_goal_tollerance_r()
-            visual_tests.check_traj_correspondences(self.full_trajectory, filename, x_ratio, y_ratio)
-            visual_tests.check_radious(self.full_trajectory, filename, radius)
-            # visual_tests.check_map() #modify call-site
+            counter = 0
+            for waypoint in self.full_trajectory:
+                if self.utils.is_good_goal(waypoint):
+                    print("Goal ", counter, "is good.")
+                else:
+                    print("Goal ", counter, "is bad.")
+                counter = counter + 1
+            print("Check on the image")
+            visual_tests.show_good_bad_points(self.full_trajectory, int(map_source))
+            visual_tests.check_traj_correspondences(self.full_trajectory, filename, int(map_source) )
             visual_tests.check_feasibility()
-        
+
             sys.exit(0)
         
-        else:
-            #this is done to transform goal from map to robot pose
-            #alternatively I think it cloud be done with TF
-            self.full_trajectory = utils.correct_trajectory(self.full_trajectory, rospy.get_param("map_shift"))  
+        # else:
+        #     #this is done to transform goal from map to robot pose and applying the map initial shift
+        #     #alternatively I think it cloud be done with TF
+        #     self.full_trajectory = self.utils.correct_trajectory(self.full_trajectory, rospy.get_param("map_shift")) 
+            
 
-        
-        # self.xy_tolerance = rospy.get_param("/move_base/TebLocalPlannerROS/xy_goal_tolerance")
-        # self.yaw_tolerance = rospy.get_param("/move_base/TebLocalPlannerROS/yaw_goal_tolerance")
 
         #ROS interface
+        self.map_shift = rospy.get_param("map_shift")
         #action for move_base
         self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
         self.client.wait_for_server()
@@ -51,10 +60,6 @@ class trajectoryGenerator:
         self.occupancy_grid_sub = rospy.Subscriber("/map",OccupancyGrid, self.map_cb)
         self.laer_scan_sub = rospy.Subscriber("/scan",LaserScan, self.laser_cb)
         self.laser_msg = LaserScan()
-        
-        #set desired goal tolerances for the local planner (so not modify yaw since the robot will rotate at the end)
-        # rospy.set_param("/move_base/TebLocalPlannerROS/xy_goal_tolerance",5) #meters (default 0.2)
-        # rospy.set_param("/move_base/TebLocalPlannerROS/yaw_goal_tolerance", 6.28)
 
 
     def start(self):
@@ -66,15 +71,41 @@ class trajectoryGenerator:
         self.goal.target_pose.pose.orientation.z = 0.0
         self.goal.target_pose.pose.orientation.w = 1.0 #not sending orientation, we will rotate to align at the end
 
-        # for waypoint in self.full_trajectory:
-        #     if self.send_wp(waypoint[0], waypoint[1]):
-        #         print 'Goal Reached! Moving to the next if any'
-        #         time.sleep(2.0) #here we rotate and align
+        counter = 0
+        for waypoint in self.full_trajectory:
+            if self.utils.is_good_goal(waypoint):
+                print("Feasible waypoint, proceeding")
+                # print("Waypoint n ", counter, "at", waypoint[0], waypoint[1])
+                # print("Or in pixels ", self.utils.meters2pixels(waypoint[0], waypoint[1]))
+                shifted_x, shifted_y = self.utils.shift_goal(waypoint,self.map_shift)
+                if self.send_wp(shifted_x, shifted_y):
+                    print 'Goal Reached! Moving to the next if any'
+            else:
+                print("NOT Feasible waypoint, changing it")
+                # print("Waypoint n ", counter, "at", waypoint[0], waypoint[1], "not feasible")
+                # print("Or in pixels ", self.utils.meters2pixels(waypoint[0], waypoint[1]))
+                i,j = self.utils.meters2pixels(waypoint[0], waypoint[1])
+                new_point = self.utils.find_closest_goal(self.utils.get_map_image(), (i,j))
+                feasible_x,feasible_y = self.utils.pixels2meters(new_point[0],new_point[1])
+                shifted_x, shifted_y = self.utils.shift_goal((feasible_x,feasible_y),self.map_shift)
+                # print("NEW Waypoint n ", counter, "at",new_x,new_y)
+                # print("Or in pixels ", i,j)
+                if counter ==  2:
+                    f = open("/home/majo/catkin_ws/src/store_gfk/demofile2.txt", "a")
+                    f.write("original waypoint")
+                    f.write(waypoint)  
+                    f.write("i,j")
+                    f.write(i,j)                 
+                    f.write("feasible_x,feasible_y")
+                    f.write(feasible_x,feasible_y)
+                    f.close()
+                if self.send_wp(shifted_x, shifted_y):
+                    print 'Goal Reached! Moving to the next if any'
+                
 
-        
-        if self.send_wp(self.full_trajectory[0][0], self.full_trajectory[0][1]):
-            print 'Goal Reached! Moving to the next if any'
-            time.sleep(2.0) #here we rotate and align
+            counter = counter +1
+            time.sleep(2.0)
+
         
         # align_robot()
 
@@ -118,12 +149,11 @@ def main():
     
     args = rospy.myargv()
     
-    if len(args) != 3:
+    if len(args) != 4:
         Utils.print_usage(1)
     rospy.init_node('wpoints_generator', anonymous=True)
-    print(args)
     
-    robot_navigation = trajectoryGenerator(args, True)
+    robot_navigation = trajectoryGenerator(args, False)
     robot_navigation.start()
 
     
