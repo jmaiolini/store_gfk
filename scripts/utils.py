@@ -7,6 +7,7 @@ import rospy
 import rospkg
 import cv2
 import numpy as np
+import math 
 
 class Utils:
 
@@ -107,6 +108,9 @@ class Utils:
             self.m_px_ratio_x = traj_m_px_ratio_x
             self.m_px_ratio_y = traj_m_px_ratio_y
 
+            self.maps_x_ratio = 1.0
+            self.maps_y_ratio = 1.0
+
         elif self.map_source == 1: #setting params based on blender
             self.store_width = blender_store_width
             self.store_height = blender_store_height
@@ -156,10 +160,12 @@ class Utils:
             corr_traj.append(corr_pose)
         return corr_traj
         
-    def tranform_position(self, x_traj, y_traj): 
+    def tranform_position(self, x_traj, y_traj):
 
-        x_map = x_traj 
-        y_map = self.store_height - y_traj
+        x = self.maps_x_ratio * x_traj
+        y = self.maps_y_ratio * y_traj
+
+        x_map, y_map = self.map2image_meters(x,y) 
             
         if x_map >= self.store_width or y_map >= self.store_height:
             rospy.signal_shutdown('Trajectory out of store map. Aborting')
@@ -195,12 +201,6 @@ class Utils:
 
         return x_img,y_img
 
-    # def map2image_blender(self,p_x,p_y):
-    #     x_img = int(p_x / self.blender_px_m_ratio_x)
-    #     y_img = self.blender_img_height - int(p_y / self.blender_px_m_ratio_y)
-
-    #     return x_img,y_img
-
     #change reference (invert y axis) of a point in pixels
     def map2image_pixels(self,p_x,p_y):
         x = p_x
@@ -220,12 +220,21 @@ class Utils:
 
         return corr_pose
 
-    def is_good_goal(self, goal): #TODO parametrize based on size of robot base
+    def is_good_goal_meters(self, goal):
         ksize = 10 #for each side (based on robot radius)
-        x = self.maps_x_ratio * goal[0]
-        y = self.maps_y_ratio * goal[1]
-        i,j = self.map2image(x,y)
+        # x = self.maps_x_ratio * goal[0]
+        # y = self.maps_y_ratio * goal[1]
+        i,j = self.map2image(goal[0],goal[1])
         patch = self.map_image[j-ksize:j+ksize,i-ksize:i+ksize]
+
+        return np.average(patch) == 255
+
+    def is_good_goal_pixels(self, goal):
+        ksize = 10 #for each side (based on robot radius)
+        # x = self.maps_x_ratio * goal[0]
+        # y = self.maps_y_ratio * goal[1]
+        # i,j = self.map2image(x,y)
+        patch = self.map_image[goal[1]-ksize:goal[1]+ksize,goal[0]-ksize:goal[0]+ksize]
 
         return np.average(patch) == 255
 
@@ -254,32 +263,126 @@ class Utils:
             if i in range(goal[0]-ksize+2,goal[0]+ksize-2):
                 pass
             for j in range(goal[1]-ksize,goal[1]+ksize):
-                if store_map[j][i] == 255:
-                    found_neigh,x,y = self.check_neighbors(store_map,i,j)
+                if store_map[j][i][1] == 255:
+                    found_neigh,new_i,new_j = self.check_neighbors(store_map,i,j)
                     if found_neigh:
-                        return (x,y)
+                        # i,j = self.pixels2meters(x,y)
+                        # print("The new goal found is (good or bad)", self.is_good_goal_pixels((i,j)))
+                        return (new_i,new_j)
         return (0,0)
+
+    def find_closest_goal2(self, store_map, curr_goal, prev_goal):
+        new_goal = curr_goal
+        feasible_found = False
+        kernel_size = 1
+
+        while (not feasible_found):
+            new_goal = self.find_feasible2(store_map, curr_goal, prev_goal,kernel_size)
+            if new_goal == (0,0):
+                kernel_size+=2
+                print("kernel size now ", kernel_size)
+            else:
+                feasible_found = True #eventually will find a feasible on the boundaries
+        
+            if kernel_size > 30:
+                break
+
+        if kernel_size == 1:
+            return curr_goal
+        return new_goal
+
+    def find_feasible2(self, store_map, goal, prev_goal, ksize):
+        
+        x_pts = [goal[0]-ksize,goal[0]+ksize]
+        y_pts = [goal[1]-ksize,goal[1]+ksize]
+        new_i = 0
+        new_j = 0
+
+        possible_goals = list()
+        for i in x_pts:
+            for j in y_pts:
+                if store_map[j][i][1] == 255:
+                    new_i = i
+                    new_j = j
+
+        found_neigh,new_i,new_j = self.check_neighbors2(store_map,new_i,new_j)
+        if found_neigh:
+            return (new_i,new_j)
+
+        return (new_i,new_j)
 
     def check_neighbors(self,store_map,i,j):
         ksize = 20
         left = store_map[j-ksize:j+ksize,i-ksize:i]
         if np.average(left) == 255:
             print("MOVING TO THE LEFT")
-            return 1,i-ksize,j
+            return 1,int(i-ksize/2),j
         right = store_map[j-ksize:j+ksize,i: i+ksize]
         if np.average(right) == 255:
             print("MOVING TO THE RIGHT")
-            return 1,i+ksize,j
+            return 1,int(i+ksize/2),j
         top = store_map[j-ksize:j, i-ksize:i+ksize]
         if np.average(top) == 255:
             print("MOVING TO THE TOP")
-            return 1,i,j-ksize
+            return 1,i,int(j-ksize/2)
         bottom = store_map[j:j+ksize, i-ksize:i+ksize]
         if np.average(bottom) == 255:
             print("MOVING TO THE BOTTOM")
-            return 1,i,j+ksize
+            return 1,i,int(j+ksize/2)
      
         return 0,0,0
+
+    def check_neighbors2(self,store_map,i,j):
+        if (i !=0 ):
+            ksize = 20
+            left = store_map[j-ksize:j+ksize,i-ksize:i]
+            if np.average(left) == 255:
+                print("MOVING TO THE LEFT")
+                return 1,int(i-ksize/2),j
+            right = store_map[j-ksize:j+ksize,i: i+ksize]
+            if np.average(right) == 255:
+                print("MOVING TO THE RIGHT")
+                return 1,int(i+ksize/2),j
+            top = store_map[j-ksize:j, i-ksize:i+ksize]
+            if np.average(top) == 255:
+                print("MOVING TO THE TOP")
+                return 1,i,int(j-ksize/2)
+            bottom = store_map[j:j+ksize, i-ksize:i+ksize]
+            if np.average(bottom) == 255:
+                print("MOVING TO THE BOTTOM")
+                return 1,i,int(j+ksize/2)
+     
+        return 0,0,0
+    
+    def find_closest_goal2(self, store_map, curr_goal, prev_goal):
+        new_goal = curr_goal
+        feasible_found = False
+        kernel_size = 1
+
+        while (not feasible_found):
+            new_goal = self.find_feasible2(store_map, curr_goal, prev_goal,kernel_size)
+            if new_goal == (0,0):
+                kernel_size+=2
+                print("kernel size now ", kernel_size)
+            else:
+                feasible_found = True #eventually will find a feasible on the boundaries
+        
+            if kernel_size > 30:
+                break
+
+        if kernel_size == 1:
+            return curr_goal
+        return new_goal
+
+    def get_closest_to_prev_goal(self, goals, prev_goal): #rewrite better, this is just a WIP
+        closest = (0,0)
+        dist = 99999
+        for goal in goals:
+            if math.sqrt( (goal[0]-prev_goal[0])**2 + (goal[1]-prev_goal[1])**2 ) < dist:
+                dist = (goal[0]-prev_goal[0])**2 + (goal[1]-prev_goal[1])**2
+                closest = goal
+
+        return closest
 
     def get_ratios(self):
         return self.m_px_ratio_x, self.m_px_ratio_y
@@ -298,7 +401,7 @@ class Utils:
     def get_map_image(self):
         return self.map_image
 
-
+    #opencv utils
     def show_img_and_wait_key(self,window_name,img):
         cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
         cv2.resizeWindow(window_name, int(1602/2), int(1210/2))
@@ -306,5 +409,9 @@ class Utils:
         cv2.waitKey(0)
         cv2.destroyWindow(window_name)
 
+    def save_image(self,filename,img):
+        rospack = rospkg.RosPack()
+        filepath = rospack.get_path('store_gfk') + '/' + filename
+        cv2.imwrite(filepath,img)
 
 

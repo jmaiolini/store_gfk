@@ -73,14 +73,28 @@ def show_good_bad_points(waypoints,map_source):
     img = cv2.imread(filename,cv2.IMREAD_COLOR)
 
     for waypoint in waypoints:
-        x = utils.maps_x_ratio * waypoint[0]
-        y = utils.maps_y_ratio * waypoint[1]
+        # x = utils.maps_x_ratio * waypoint[0]
+        # y = utils.maps_y_ratio * waypoint[1]
 
-        i,j = utils.map2image(x,y)
-       
-        patch = img[j-ksize:j+ksize,i-ksize:i+ksize,1]
-        img[j-ksize:j+ksize,i-ksize:i+ksize] = (0,0,255)
-        
-        averages.append(np.average(patch))
+        i,j = utils.map2image(waypoint[0],waypoint[1])
+
+        draw_arrow(img,(i,j),(i+20,j),0)
 
     utils.show_img_and_wait_key("Wpoints goodness", img)
+
+#drawing functions
+def draw_point(img,pt,color):
+    return cv2.circle(img,pt,3,color)
+
+def draw_robot(img,pt,radius,color):
+    return cv2.circle(img,pt,int(radius),color,2)
+
+def draw_arrow(img, pt1, pt2, color):
+    return cv2.arrowedLine(img, pt1, pt2, color,2)
+
+
+def draw_patch(img, pt, psize,color):
+    pt1 = (int(pt[0]-psize/2),int(pt[1]-psize/2))
+    pt2 = (int(pt[0]+psize/2),int(pt[1]+psize/2))
+    return cv2.rectangle(img,pt1,pt2,color,-1)
+
