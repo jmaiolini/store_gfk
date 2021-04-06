@@ -354,25 +354,42 @@ class Utils:
      
         return 0,0,0
     
-    def find_closest_goal2(self, store_map, curr_goal, prev_goal):
-        new_goal = curr_goal
-        feasible_found = False
-        kernel_size = 1
-
-        while (not feasible_found):
-            new_goal = self.find_feasible2(store_map, curr_goal, prev_goal,kernel_size)
-            if new_goal == (0,0):
-                kernel_size+=2
-                print("kernel size now ", kernel_size)
-            else:
-                feasible_found = True #eventually will find a feasible on the boundaries
+    def find_closest_goal3(self, store_map, curr_goal, patch_sz):
+        initial_patch = store_map[curr_goal[1]-patch_sz:curr_goal[1]+patch_sz,curr_goal[0]-patch_sz:curr_goal[0]+patch_sz]
+        mean = np.average(initial_patch)
+        new_x = 0
+        new_y = 0
+        if mean == 255:
+            return curr_goal #already a valid point
         
-            if kernel_size > 30:
+        for slide_cnt in range(1,100): #after 30 i believe something went wrong
+            found,new_x,new_y = self.slide_patch(store_map, curr_goal, patch_sz, slide_cnt)
+            if found:
                 break
+        return new_x,new_y
 
-        if kernel_size == 1:
-            return curr_goal
-        return new_goal
+    def slide_patch(self, store_map,goal, patch_sz, it):
+        i = goal[0]
+        j = goal[1]
+        up_patch = store_map[j-patch_sz/2-it:j+patch_sz/2-it,i-patch_sz/2:i+patch_sz/2]
+        down_patch = store_map[j-patch_sz/2+it:j+patch_sz/2+it,i-patch_sz/2:i+patch_sz/2]
+        left_patch = store_map[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2-it:i+patch_sz/2-it]
+        right_patch = store_map[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2+it:i+patch_sz/2+it]
+
+        if np.average(up_patch) == 255:
+            print("np.average(up_patch)",np.average(up_patch))
+            return 1,i,j-it
+        if np.average(down_patch) == 255:
+            print("np.average(down_patch)",np.average(down_patch))
+            return 1,i,j+it
+        if np.average(left_patch) == 255:
+            print("np.average(left_patch)",np.average(left_patch))
+            return 1,i-it,j
+        if np.average(right_patch) == 255:
+            print("np.average(right_patch)",np.average(right_patch))
+            return 1,i+it,j
+        return 0,0,0
+
 
     def get_closest_to_prev_goal(self, goals, prev_goal): #rewrite better, this is just a WIP
         closest = (0,0)

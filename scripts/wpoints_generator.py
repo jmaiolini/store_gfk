@@ -49,9 +49,14 @@ class trajectoryGenerator:
                 if self.utils.is_good_goal_meters(waypoint):
                     print("GOOD GOAL, showing it as green for the direction")
                     i,j = self.utils.map2image(waypoint[0],waypoint[1])
-                    img = visual_tests.draw_patch(img,(i,j),20,(0,255,255))
-                    img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,255,0))
-                    img = visual_tests.draw_arrow(img,(i,j),(i+20,j),(0,255,0))
+                    # img = visual_tests.draw_patch(img,(i,j),20,(0,255,255))
+                    # img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,255,0))
+                    # img = visual_tests.draw_arrow(img,(i,j),(i+20,j),(0,255,0))
+                    patch_sz = 30
+                    new_pt3 = self.utils.find_closest_goal3(img,(i,j),patch_sz) #3nd approach (robust) 30 i
+                    img = visual_tests.draw_patch(img,new_pt3,patch_sz,(255,0,255))
+                    img = visual_tests.draw_robot(img,new_pt3,px_robot_radius,(255,255,0))
+                    img = visual_tests.draw_arrow(img,new_pt3,(new_pt3[0]+20,new_pt3[1]),(0,255,0))
 
                     prev_waypoint = (i,j)
                      
@@ -59,21 +64,24 @@ class trajectoryGenerator:
                 else:
                     print("BAD GOAL, modifying it")
                     i,j = self.utils.map2image(waypoint[0],waypoint[1])
-                    img = visual_tests.draw_patch(img,(i,j),20,(0,255,255))
-                    img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,255,0))
-                    img = visual_tests.draw_arrow(img,(i,j),(i+20,j),(0,0,255))
+                    # img = visual_tests.draw_patch(img,(i,j),20,(0,255,255))
+                    # img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,255,0))
+                    # img = visual_tests.draw_arrow(img,(i,j),(i+20,j),(0,0,255))
                     new_pt = self.utils.find_closest_goal(img, (i,j)) 
                     new_pt2 = self.utils.find_closest_goal2(img, (i,j), prev_waypoint) #2nd approach (optimized)
                     # img = visual_tests.draw_patch(img,new_pt,20,(0,255,255))
                     # img = visual_tests.draw_robot(img,new_pt,px_robot_radius,(255,255,0))
                     # img = visual_tests.draw_arrow(img,new_pt,(new_pt[0]+20,new_pt[1]),(0,255,0))
-                    img = visual_tests.draw_patch(img,new_pt2,20,(0,255,255))
-                    img = visual_tests.draw_robot(img,new_pt2,px_robot_radius,(255,255,0))
-                    img = visual_tests.draw_arrow(img,new_pt2,(new_pt2[0]+20,new_pt2[1]),(0,255,0))
-                    new_pt3 = self.utils.find_closest_goal3(img, (i,j)) #3nd approach (robust)
-                    img = visual_tests.draw_patch(img,new_pt3,20,(0,255,255))
+                    # img = visual_tests.draw_patch(img,new_pt2,20,(0,255,255))
+                    # img = visual_tests.draw_robot(img,new_pt2,px_robot_radius,(255,255,0))
+                    # img = visual_tests.draw_arrow(img,new_pt2,(new_pt2[0]+20,new_pt2[1]),(0,255,0))
+                    patch_sz = 30
+                    print("OLD POINTS ",i,j)
+                    new_pt3 = self.utils.find_closest_goal3(img,(i,j),patch_sz) #3nd approach (robust) 30 i
+                    img = visual_tests.draw_patch(img,new_pt3,patch_sz,(255,0,255))
                     img = visual_tests.draw_robot(img,new_pt3,px_robot_radius,(255,255,0))
                     img = visual_tests.draw_arrow(img,new_pt3,(new_pt3[0]+20,new_pt3[1]),(0,255,0))
+                    print("NEW POINTS ", new_pt3)
                     prev_waypoint = new_pt2
 
             
