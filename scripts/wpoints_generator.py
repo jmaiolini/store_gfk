@@ -47,17 +47,19 @@ class trajectoryGenerator:
             # a yellow square showing the area on which we ask if the waypoint is good or needs to be refined
             # arrow (for now only pointing at 0 degrees) to show the robot heading
             #if the point is bad, additional squares and arrows are shown
-
+            goal_cnt = 0
             for position in self.full_trajectory:
                 i,j = self.utils.map2image(position[0],position[1])
-                img = visual_tests.draw_patch(img,(i,j),self.patch_sz,(0,0,255))
-                img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,255,0))
-                img = visual_tests.draw_arrow(img,(i,j),(i+20,j),(0,0,255))
-                new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz)
-                img = visual_tests.draw_patch(img,new_img_pt,self.patch_sz,(0,255,255))
-                img = visual_tests.draw_robot(img,new_img_pt,px_robot_radius,(255,255,0))
-                img = visual_tests.draw_arrow(img,new_img_pt,(new_img_pt[0]+20,new_img_pt[1]),(0,255,0))
+                new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz,goal_cnt)
+                img = visual_tests.draw_patch(img,new_img_pt,self.patch_sz,(0,255,0))
+                img = visual_tests.draw_robot(img,new_img_pt,px_robot_radius,(255,0,0))
+                img = visual_tests.draw_arrow(img,new_img_pt,(new_img_pt[0]+25,new_img_pt[1]),(0,255,0))
+                if( i!=new_img_pt[0] or j != new_img_pt[1] ):
+                    img = visual_tests.draw_patch(img,(i,j),self.patch_sz,(0,0,255))
+                    img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,0,0))
+                    img = visual_tests.draw_arrow(img,(i,j),(i+25,j),(0,0,255))
 
+                goal_cnt = goal_cnt + 1
 
             self.utils.show_img_and_wait_key("Patches",img)
             self.utils.save_image("modified_trajectory.jpg", img)

@@ -241,12 +241,13 @@ class Utils:
 
         return np.average(patch) == 255
     
-    def find_feasible_point(self, store_map, curr_goal, patch_sz):
-        initial_patch = store_map[curr_goal[1]-patch_sz:curr_goal[1]+patch_sz,curr_goal[0]-patch_sz:curr_goal[0]+patch_sz]
+    def find_feasible_point(self, store_map, curr_goal, patch_sz,iter):
+        initial_patch = store_map[curr_goal[1]-patch_sz/2:curr_goal[1]+patch_sz/2,curr_goal[0]-patch_sz/2:curr_goal[0]+patch_sz/2]
         mean = np.average(initial_patch)
         new_x = 0
         new_y = 0
         if mean == 255:
+            print("Number ", iter, "is already a good goal")
             return curr_goal #already a valid point
         
         for slide_cnt in range(1,100): 
