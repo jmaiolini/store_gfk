@@ -13,8 +13,20 @@ This repository uses already available ROS robots and adds some cameras on them 
 ```
 in the file 
 ```bash
-~/<your_workspace>/src/pmb2_public_ws/src/pmb2_robot/pmb2_description/urdf/base/base_sensors.urdf.xacro
+.../pmb2_public_ws/src/pmb2_robot/pmb2_description/urdf/base/base_sensors.urdf.xacro
 ```
+* modify as you please the tolerances for the final pose of the robot on a given goal: 
+
+```bash
+# GoalTolerance
+  xy_goal_tolerance: 0.2
+  yaw_goal_tolerance: 0.2
+```
+in the file located at
+```bash
+.../pmb2_public_ws/src/pal_navigation_cfg_public/pal_navigation_cfg_pmb2/config/base/teb/local_planner.yaml
+```
+To have more flexibility on the robot, I suggest to set ```yaw_goal_tolerance: 6.28``` so any yaw is allowed.
 This enables to use our robot model consisting into the TIAGo-base + 4 additional RGBD cameras mounted on top.
 * Use the following command to spawn the robot within the store map
 ```bash
@@ -37,7 +49,7 @@ sudo apt install ros-melodic-teleop-twist-keyboard
 ```
 * Once done, to save the map in the right folder run
 ```bash
-rosservice call /pal_map_manager/save_map "directory: '../../../<your_workspace>/src/store_gfk/maps/<store_name>/<map_name>'"
+rosservice call /pal_map_manager/save_map "directory: '<rel_path_to_your_workspace>/src/store_gfk/maps/<store_name>/<map_name>'"
 ```
 ### Mapping (custom)
 Given that we have a perfectly known map of the store we should use this information.
