@@ -92,7 +92,6 @@ def draw_robot(img,pt,radius,color):
 def draw_arrow(img, pt1, pt2, color):
     return cv2.arrowedLine(img, pt1, pt2, color,2)
 
-
 def draw_patch(img, pt, psize,color):
     pt1 = (int(pt[0]-psize/2),int(pt[1]-psize/2))
     pt2 = (int(pt[0]+psize/2),int(pt[1]+psize/2))

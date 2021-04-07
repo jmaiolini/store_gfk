@@ -15,6 +15,7 @@ in the file
 ```bash
 .../pmb2_public_ws/src/pmb2_robot/pmb2_description/urdf/base/base_sensors.urdf.xacro
 ```
+This enables to use our robot model consisting into the TIAGo-base + 4 additional RGBD cameras mounted on top.
 * modify as you please the tolerances for the final pose of the robot on a given goal: 
 
 ```bash
@@ -24,10 +25,10 @@ in the file
 ```
 in the file located at
 ```bash
-.../pmb2_public_ws/src/pal_navigation_cfg_public/pal_navigation_cfg_pmb2/config/base/teb/local_planner.yaml
+.../pmb2_public_ws/src/pal_navigation_cfg_public/pal_navigation_cfg_pmb2/config/base/teb/
 ```
 To have more flexibility on the robot, I suggest to set ```yaw_goal_tolerance: 6.28``` so any yaw is allowed.
-This enables to use our robot model consisting into the TIAGo-base + 4 additional RGBD cameras mounted on top.
+
 * Use the following command to spawn the robot within the store map
 ```bash
 roslaunch store_gfk store_gfk.launch

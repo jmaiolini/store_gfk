@@ -75,8 +75,11 @@ class Utils:
 
         - <map_source> put 0 to set wpoints from trajectory map (output of ANN)
                        put 1 to set wpoints from blender map
+
+        - <visual_tests> put 0 to send wpoints to the robot
+                         put 1 to show the trajectory in an image to test correctness
           
-        Example: rosrun store_gfk wpoints_generator.py edeka 1 1
+        Example: rosrun store_gfk wpoints_generator.py edeka 1 1 False
         '''
 
         sys.exit(exit_code)
@@ -237,124 +240,8 @@ class Utils:
         patch = self.map_image[goal[1]-ksize:goal[1]+ksize,goal[0]-ksize:goal[0]+ksize]
 
         return np.average(patch) == 255
-
-    def find_closest_goal(self, store_map, curr_goal):
-        new_goal = curr_goal
-        feasible_found = False
-        kernel_size = 1
-
-        while (not feasible_found):
-            new_goal = self.find_feasible(store_map, curr_goal, kernel_size)
-            if new_goal == (0,0):
-                kernel_size+=2
-                print("kernel size now ", kernel_size)
-            else:
-                feasible_found = True #eventually will find a feasible on the boundaries
-        
-            if kernel_size > 30:
-                break
-
-        if kernel_size == 1:
-            return curr_goal
-        return new_goal
-
-    def find_feasible(self, store_map, goal, ksize):
-        for i in range(goal[0]-ksize,goal[0]+ksize):
-            if i in range(goal[0]-ksize+2,goal[0]+ksize-2):
-                pass
-            for j in range(goal[1]-ksize,goal[1]+ksize):
-                if store_map[j][i][1] == 255:
-                    found_neigh,new_i,new_j = self.check_neighbors(store_map,i,j)
-                    if found_neigh:
-                        # i,j = self.pixels2meters(x,y)
-                        # print("The new goal found is (good or bad)", self.is_good_goal_pixels((i,j)))
-                        return (new_i,new_j)
-        return (0,0)
-
-    def find_closest_goal2(self, store_map, curr_goal, prev_goal):
-        new_goal = curr_goal
-        feasible_found = False
-        kernel_size = 1
-
-        while (not feasible_found):
-            new_goal = self.find_feasible2(store_map, curr_goal, prev_goal,kernel_size)
-            if new_goal == (0,0):
-                kernel_size+=2
-                print("kernel size now ", kernel_size)
-            else:
-                feasible_found = True #eventually will find a feasible on the boundaries
-        
-            if kernel_size > 30:
-                break
-
-        if kernel_size == 1:
-            return curr_goal
-        return new_goal
-
-    def find_feasible2(self, store_map, goal, prev_goal, ksize):
-        
-        x_pts = [goal[0]-ksize,goal[0]+ksize]
-        y_pts = [goal[1]-ksize,goal[1]+ksize]
-        new_i = 0
-        new_j = 0
-
-        possible_goals = list()
-        for i in x_pts:
-            for j in y_pts:
-                if store_map[j][i][1] == 255:
-                    new_i = i
-                    new_j = j
-
-        found_neigh,new_i,new_j = self.check_neighbors2(store_map,new_i,new_j)
-        if found_neigh:
-            return (new_i,new_j)
-
-        return (new_i,new_j)
-
-    def check_neighbors(self,store_map,i,j):
-        ksize = 20
-        left = store_map[j-ksize:j+ksize,i-ksize:i]
-        if np.average(left) == 255:
-            print("MOVING TO THE LEFT")
-            return 1,int(i-ksize/2),j
-        right = store_map[j-ksize:j+ksize,i: i+ksize]
-        if np.average(right) == 255:
-            print("MOVING TO THE RIGHT")
-            return 1,int(i+ksize/2),j
-        top = store_map[j-ksize:j, i-ksize:i+ksize]
-        if np.average(top) == 255:
-            print("MOVING TO THE TOP")
-            return 1,i,int(j-ksize/2)
-        bottom = store_map[j:j+ksize, i-ksize:i+ksize]
-        if np.average(bottom) == 255:
-            print("MOVING TO THE BOTTOM")
-            return 1,i,int(j+ksize/2)
-     
-        return 0,0,0
-
-    def check_neighbors2(self,store_map,i,j):
-        if (i !=0 ):
-            ksize = 20
-            left = store_map[j-ksize:j+ksize,i-ksize:i]
-            if np.average(left) == 255:
-                print("MOVING TO THE LEFT")
-                return 1,int(i-ksize/2),j
-            right = store_map[j-ksize:j+ksize,i: i+ksize]
-            if np.average(right) == 255:
-                print("MOVING TO THE RIGHT")
-                return 1,int(i+ksize/2),j
-            top = store_map[j-ksize:j, i-ksize:i+ksize]
-            if np.average(top) == 255:
-                print("MOVING TO THE TOP")
-                return 1,i,int(j-ksize/2)
-            bottom = store_map[j:j+ksize, i-ksize:i+ksize]
-            if np.average(bottom) == 255:
-                print("MOVING TO THE BOTTOM")
-                return 1,i,int(j+ksize/2)
-     
-        return 0,0,0
     
-    def find_closest_goal3(self, store_map, curr_goal, patch_sz):
+    def find_feasible_point(self, store_map, curr_goal, patch_sz):
         initial_patch = store_map[curr_goal[1]-patch_sz:curr_goal[1]+patch_sz,curr_goal[0]-patch_sz:curr_goal[0]+patch_sz]
         mean = np.average(initial_patch)
         new_x = 0
@@ -362,7 +249,7 @@ class Utils:
         if mean == 255:
             return curr_goal #already a valid point
         
-        for slide_cnt in range(1,100): #after 30 i believe something went wrong
+        for slide_cnt in range(1,100): 
             found,new_x,new_y = self.slide_patch(store_map, curr_goal, patch_sz, slide_cnt)
             if found:
                 break
@@ -376,30 +263,18 @@ class Utils:
         left_patch = store_map[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2-it:i+patch_sz/2-it]
         right_patch = store_map[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2+it:i+patch_sz/2+it]
 
-        if np.average(up_patch) == 255:
-            print("np.average(up_patch)",np.average(up_patch))
+        if self.is_good_spot(up_patch):
             return 1,i,j-it
-        if np.average(down_patch) == 255:
-            print("np.average(down_patch)",np.average(down_patch))
+        if self.is_good_spot(down_patch):
             return 1,i,j+it
-        if np.average(left_patch) == 255:
-            print("np.average(left_patch)",np.average(left_patch))
+        if self.is_good_spot(left_patch):
             return 1,i-it,j
-        if np.average(right_patch) == 255:
-            print("np.average(right_patch)",np.average(right_patch))
+        if self.is_good_spot(right_patch):
             return 1,i+it,j
         return 0,0,0
 
-
-    def get_closest_to_prev_goal(self, goals, prev_goal): #rewrite better, this is just a WIP
-        closest = (0,0)
-        dist = 99999
-        for goal in goals:
-            if math.sqrt( (goal[0]-prev_goal[0])**2 + (goal[1]-prev_goal[1])**2 ) < dist:
-                dist = (goal[0]-prev_goal[0])**2 + (goal[1]-prev_goal[1])**2
-                closest = goal
-
-        return closest
+    def is_good_spot(self,patch):
+        return np.average(patch) == 255
 
     def get_ratios(self):
         return self.m_px_ratio_x, self.m_px_ratio_y

@@ -16,10 +16,6 @@ class mapGenerator():
     rospack = rospkg.RosPack()
     filepath = rospack.get_path('store_gfk') + '/construct_map/edeka_blender.png'
     img = cv2.imread(filepath,1)
-
-    laplacian = cv2.Laplacian(img,cv2.CV_64F)
-    sobelx = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=3)
-    sobely = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=3)
     gray_img = cv2.cvtColor(img,cv2.COLOR_RGB2GRAY)
  
  
@@ -79,9 +75,6 @@ def main():
   except KeyboardInterrupt:
       print("Shutting down map_generator")
 
-
-
-    
 
 if __name__ == '__main__':
     main()
