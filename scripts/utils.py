@@ -75,11 +75,8 @@ class Utils:
 
         - <map_source> put 0 to set wpoints from trajectory map (output of ANN)
                        put 1 to set wpoints from blender map
-
-        - <visual_tests> put 0 to send wpoints to the robot
-                         put 1 to show the trajectory in an image to test correctness
           
-        Example: rosrun store_gfk wpoints_generator.py edeka 1 1 False
+        Example: rosrun store_gfk wpoints_generator.py edeka 1 1
         '''
 
         sys.exit(exit_code)
@@ -135,7 +132,6 @@ class Utils:
         rospack = rospkg.RosPack()
         filepath = rospack.get_path('store_gfk') + '/trajectories/' + self.filename
 
-    
         if os.path.exists(filepath):
             with open(filepath) as f:
                 data = json.load(f)
@@ -284,11 +280,11 @@ class Utils:
         rospack = rospkg.RosPack()
         filepath = rospack.get_path('store_gfk')
         if self.map_source == 0:
-            filepath += '/trajectories/' + self.filename
+            filepath += '/trajectories/' + self.filename #to parametrize
             filename = os.path.splitext(filepath)[0]+'.jpg'
             self.map_image = cv2.imread(filename)
         elif self.map_source == 1:
-            filename = rospack.get_path('store_gfk') + '/maps/edeka/trial/map.pgm'
+            filename = filepath + '/maps/edeka/trial/map.pgm' #to parametrize
             self.map_image = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
 
     def get_map_image(self):
@@ -302,9 +298,26 @@ class Utils:
         cv2.waitKey(0)
         cv2.destroyWindow(window_name)
 
-    def save_image(self,filename,img):
-        rospack = rospkg.RosPack()
-        filepath = rospack.get_path('store_gfk') + '/' + filename
-        cv2.imwrite(filepath,img)
+    def read_image(self,filename, coding = 1):
+        return cv2.imread(filename,1)
+
+    def save_image(self,filename,image):
+        cv2.imwrite(filename,image)
+
+    def gray2bgr(self,image):
+        return cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+
+    def bgr2gray(self,image):
+        return cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+
+    def dir_exists(self,path):
+        if os.path.exists(path):
+            return True
+        else:
+            return self.create_dir(path)
+
+    def create_dir(self,path):
+        return os.makedirs(path)
+
 
 

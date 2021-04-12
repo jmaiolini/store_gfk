@@ -4,7 +4,7 @@
 
   <arg name="store_name"   default="edeka"/>
   <arg name="map_name"  default="trial"/> <!-- the name given when saving it-->
-  <arg name="traj_num"  default="1"/>
+  <arg name="traj_num"  default="2"/>
   <arg name="map_source"  default="1"/> <!-- 0 for map from Neural Network, 1 from Blender -->
   <arg name="generator_on"  default="true"/> <!-- toggle if you want the generator to automatically start -->
   <arg name="rviz"     default="true"/> <!-- enable rviz -->

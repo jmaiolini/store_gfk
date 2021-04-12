@@ -22,14 +22,14 @@
   <xacro:property name="tl_rgbd_x" value="0.0"/>
   <xacro:property name="tl_rgbd_y" value="${support_y/2}"/>
   <xacro:property name="tl_rgbd_z" value="${2/3*support_height+robot_height}"/>
-  <xacro:property name="tl_rgbd_R" value="0.0"/> <!-- rotations are with respect ?? axis-->
+  <xacro:property name="tl_rgbd_R" value="20.0"/> <!-- rotations are with respect world axis-->
   <xacro:property name="tl_rgbd_P" value="0.0"/>
   <xacro:property name="tl_rgbd_Y" value="90.0"/>
   <!-- top-right camera -->
   <xacro:property name="tr_rgbd_x" value="0.0"/>
   <xacro:property name="tr_rgbd_y" value="${-support_y/2}"/>
   <xacro:property name="tr_rgbd_z" value="${2/3*support_height+robot_height}"/>
-  <xacro:property name="tr_rgbd_R" value="0.0"/> <!-- rotations are with respect ?? axis-->
+  <xacro:property name="tr_rgbd_R" value="-20.0"/>
   <xacro:property name="tr_rgbd_P" value="0.0"/>
   <xacro:property name="tr_rgbd_Y" value="-90.0"/>
 	
@@ -38,14 +38,14 @@
   <xacro:property name="bl_rgbd_x" value="0.0"/>
   <xacro:property name="bl_rgbd_y" value="${support_y/2}"/>
   <xacro:property name="bl_rgbd_z" value="${1/3*support_height+robot_height}"/>
-  <xacro:property name="bl_rgbd_R" value="0.0"/> <!-- rotations are with respect ?? axis-->
+  <xacro:property name="bl_rgbd_R" value="-20.0"/> 
   <xacro:property name="bl_rgbd_P" value="0.0"/>
   <xacro:property name="bl_rgbd_Y" value="90.0"/>
   <!-- bottom-right camera -->
   <xacro:property name="br_rgbd_x" value="0.0"/>
   <xacro:property name="br_rgbd_y" value="${-support_y/2}"/>
   <xacro:property name="br_rgbd_z" value="${1/3*support_height+robot_height}"/>
-  <xacro:property name="br_rgbd_R" value="0.0"/> <!-- rotations are with respect ?? axis-->
+  <xacro:property name="br_rgbd_R" value="20.0"/>
   <xacro:property name="br_rgbd_P" value="0.0"/>
   <xacro:property name="br_rgbd_Y" value="-90.0"/>
 
