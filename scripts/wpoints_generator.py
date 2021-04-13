@@ -151,11 +151,8 @@ class trajectoryGenerator:
         #     self.capture()
 
         i,j = self.utils.map2image(1.9 ,8.4)
-        print("i,j ", i,j)
         new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz, self.goal_cnt)
-        print("new_img_pt ", new_img_pt)
         x, y = self.utils.image2map(new_img_pt[0],new_img_pt[1])
-        print("x,y ", x,y)
         # x, y = self.utils.shift_goal((new_goal_x,new_goal_y),self.map_shift)
 
         self.send_waypoint(x, y)
@@ -165,7 +162,6 @@ class trajectoryGenerator:
         self.align()
         time.sleep(1.0)
         self.capture() 
-  
   
         rospy.signal_shutdown("Reached last goal, shutting down wpoint generator node")
         rospy.logerr("Reached last goal, shutting down wpoint generator node")
@@ -189,7 +185,7 @@ class trajectoryGenerator:
             return self.client.get_result()
 
     def align(self):
-        print("Aligning robot!!!")
+        rospy.logdebug("Aligning robot.")
         msg = Twist()
         msg.linear.x = 0
         msg.linear.y = 0
@@ -207,21 +203,17 @@ class trajectoryGenerator:
             yaw_goal = 3.14
             dir_sign = -1 if curr_yaw < 0 else 1
 
-        epsilon = 0.174533 #around 10 degrees
-        print("curr_yaw", curr_yaw)
-        print("yaw_goal = ", yaw_goal)
-        print("dir_sign = ", dir_sign)
+        epsilon = 0.0872665 #around 5 degrees
 
-        msg.angular.x = dir_sign*0.5
+        msg.angular.z = dir_sign*0.2 #moving very slowly
             
-        while abs(self.pose.pose.pose.orientation.z - yaw_goal) > epsilon:
+        while not rospy.is_shutdown() and abs(self.pose.pose.pose.orientation.z - yaw_goal) > epsilon:
             self.cmd_vel_pub.publish(msg)
             curr_yaw = self.pose.pose.pose.orientation.z
         
     def capture(self):
 
         path = self.base_path + 'acquisitions/' + self.store_name + '/' + str(self.num_trajectory) + '/'
-
         self.utils.dir_exists( path + str(self.goal_cnt) )
         
         try:
@@ -272,7 +264,7 @@ class trajectoryGenerator:
 
         #save pose
 
-        print("Saved waypoint " + str(self.goal_cnt) + " images and pose.")
+        rospy.logdebug("Saved waypoint number " + str(self.goal_cnt) + " images and pose.")
 
 
 

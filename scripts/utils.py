@@ -243,7 +243,7 @@ class Utils:
         new_x = 0
         new_y = 0
         if mean == 255:
-            print("Number ", iter, "is already a good goal")
+            print("Waypoint number ", iter, "is already a good goal")
             return curr_goal #already a valid point
         
         for slide_cnt in range(1,100): 
