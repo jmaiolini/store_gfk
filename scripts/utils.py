@@ -310,6 +310,18 @@ class Utils:
     def bgr2gray(self,image):
         return cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 
+    #miscellaneous
+
+    def save_pose(self,path,time,x,y,yaw):
+        f = open(path, "w")
+        f.write('# pose.yaml file')
+        f.write('\n\n')
+        f.write('capture_time: ' + str(time) + '\n')
+        f.write('x: ' + str(x) + '\n')
+        f.write('y: ' + str(y) + '\n')
+        f.write('yaw: ' + str(yaw) )
+        f.close()
+
     def dir_exists(self,path):
         if os.path.exists(path):
             return True
@@ -318,6 +330,9 @@ class Utils:
 
     def create_dir(self,path):
         return os.makedirs(path)
+
+    def pi(self):
+        return math.pi
 
 
 

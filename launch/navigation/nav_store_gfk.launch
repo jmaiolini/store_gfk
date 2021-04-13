@@ -6,9 +6,9 @@
   <arg name="map_name"  default="trial"/> <!-- the name given when saving it-->
   <arg name="traj_num"  default="2"/>
   <arg name="map_source"  default="1"/> <!-- 0 for map from Neural Network, 1 from Blender -->
-  <arg name="generator_on"  default="false"/> <!-- toggle if you want the generator to automatically start -->
-  <arg name="rviz"     default="false"/> <!-- enable rviz -->
-  <arg name="gzclient" default="true"/> <!-- enable gazebo -->
+  <arg name="generator_on"  default="true"/> <!-- toggle if you want the generator to automatically start -->
+  <arg name="rviz"     default="true"/> <!-- enable rviz -->
+  <arg name="gzclient" default="false"/> <!-- enable gazebo -->
 
   <!-- Modify robot initial pose. Beware this do not change move_base params so you have to change them manually. -->
   <arg name="init_pose_x" default="0.0"/>

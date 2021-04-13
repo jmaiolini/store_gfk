@@ -45,6 +45,7 @@ class trajectoryGenerator:
 
         self.goal_cnt = 0
         
+    
         if debug_mode:
             #performing all the steps to send goal but just for visualization except the map shift
             self.utils.set_map_image() #to check if the given goal is good 
@@ -71,7 +72,7 @@ class trajectoryGenerator:
                 goal_cnt = goal_cnt + 1
 
             self.utils.show_img_and_wait_key("Patches",img)
-            self.utils.save_image(self.base_path + filename, img)
+            self.utils.save_image(self.base_path + '/patches.jpg', img)
             # visual_tests.show_good_bad_points(self.full_trajectory, int(self.map_source))
             # visual_tests.check_traj_correspondences(self.full_trajectory, filename, int(self.map_source) ) #TO REVIEW (occhio a quando moltiplico i ratio, da togliere)
             # visual_tests.check_feasibility() #stessa cosa della funzione sopra
@@ -109,7 +110,7 @@ class trajectoryGenerator:
         self.br_rgb_img_msg = Image()
         # self.br_d_img_msg = Image()
 
-        self.pose_sub = rospy.Subscriber("/robot_pose",PoseWithCovarianceStamped, self.pose_cb)
+        self.pose_sub = rospy.Subscriber("/robot_pose",PoseWithCovarianceStamped, self.pose_cb) #try gazebo ground truth eventually
         self.pose = PoseWithCovarianceStamped()
         self.laser_scan_sub = rospy.Subscriber("/scan",LaserScan, self.laser_cb)
         self.laser_msg = LaserScan()
@@ -150,7 +151,7 @@ class trajectoryGenerator:
         #     time.sleep(1.0)
         #     self.capture()
 
-        i,j = self.utils.map2image(1.9 ,8.4)
+        i,j = self.utils.map2image(1.9 ,8.2)
         new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz, self.goal_cnt)
         x, y = self.utils.image2map(new_img_pt[0],new_img_pt[1])
         # x, y = self.utils.shift_goal((new_goal_x,new_goal_y),self.map_shift)
@@ -164,7 +165,7 @@ class trajectoryGenerator:
         self.capture() 
   
         rospy.signal_shutdown("Reached last goal, shutting down wpoint generator node")
-        rospy.logerr("Reached last goal, shutting down wpoint generator node")
+        rospy.logdebug("Reached last goal, shutting down wpoint generator node")
 
 
     def send_waypoint(self, x, y):
@@ -196,14 +197,14 @@ class trajectoryGenerator:
         curr_yaw = self.pose.pose.pose.orientation.z
         yaw_goal = 0
         dir_sign = 0
-        if abs(curr_yaw) < abs(curr_yaw - 3.14):
+        if abs(curr_yaw) < abs(curr_yaw - self.utils.pi()):
            yaw_goal = 0
            dir_sign = -1 if curr_yaw > 0 else 1
         else:
-            yaw_goal = 3.14
+            yaw_goal = self.utils.pi()
             dir_sign = -1 if curr_yaw < 0 else 1
 
-        epsilon = 0.0872665 #around 5 degrees
+        epsilon = 0.02 #around 1 degree
 
         msg.angular.z = dir_sign*0.2 #moving very slowly
             
@@ -263,7 +264,10 @@ class trajectoryGenerator:
         # self.utils.save_image(path + str(self.goal_cnt) + '/bottom_right_depth', br_d_img)
 
         #save pose
-
+        x = self.pose.pose.pose.position.x
+        y = self.pose.pose.pose.position.y
+        yaw = self.pose.pose.pose.orientation.z
+        self.utils.save_pose(path + str(self.goal_cnt) + '/pose.yaml',rospy.get_time(),x,y,yaw)
         rospy.logdebug("Saved waypoint number " + str(self.goal_cnt) + " images and pose.")
 
 

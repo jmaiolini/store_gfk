@@ -58,11 +58,11 @@
         <always_on>true</always_on>
         <update_rate>6.0</update_rate>
         <camera>
-          <horizontal_fov>${58.0 * deg_to_rad}</horizontal_fov>
+          <horizontal_fov>${60.0 * deg_to_rad}</horizontal_fov> <!-- 58.0 -->
           <image>
             <format>R8G8B8</format>
-            <width>320</width>
-            <height>240</height>
+            <width>3840</width> <!-- 320 -->
+            <height>2880</height> <!-- 240 , 2160 stockbot, 2880 to have 4/3 aspect ratio-->
           </image>
           <clip>
             <near>0.45</near>
