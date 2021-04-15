@@ -40,6 +40,7 @@ class trajectoryGenerator:
         self.map_shift = rospy.get_param("map_shift")
         self.robot_radius = rospy.get_param("/move_base/global_costmap/robot_radius")
         self.patch_sz = 30 #based on the robot radius (must be divisible by 2)
+        self.patch_len = 20 #(must be divisible by 2)
         
         px_robot_radius = self.utils.meters2pixels(self.robot_radius,0)[0]
 
@@ -60,14 +61,22 @@ class trajectoryGenerator:
             goal_cnt = 0
             for position in self.full_trajectory:
                 i,j = self.utils.map2image(position[0],position[1])
-                new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz,goal_cnt)
+                new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz,self.patch_len,goal_cnt)
+                robot_pose, object_pose = self.utils.get_object_direction()
+                print(robot_pose)
+                print(object_pose)
                 img = visual_tests.draw_patch(img,new_img_pt,self.patch_sz,(0,255,0))
                 img = visual_tests.draw_robot(img,new_img_pt,px_robot_radius,(255,0,0))
-                img = visual_tests.draw_arrow(img,new_img_pt,(new_img_pt[0]+25,new_img_pt[1]),(0,255,0))
+                # img = visual_tests.draw_arrow(img,new_img_pt,(new_img_pt[0]+25,new_img_pt[1]),(0,255,0))
+                #this happens if shelfs are too far
+                if robot_pose != 0 and object_pose != 0 :
+                    img = visual_tests.draw_arrow(img,robot_pose,object_pose,(0,255,0))
                 if( i!=new_img_pt[0] or j != new_img_pt[1] ):
                     img = visual_tests.draw_patch(img,(i,j),self.patch_sz,(0,0,255))
                     img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,0,0))
-                    img = visual_tests.draw_arrow(img,(i,j),(i+25,j),(0,0,255))
+                    # img = visual_tests.draw_arrow(img,(i,j),(i+25,j),(0,0,255))
+                    if robot_pose != 0 and object_pose != 0 :
+                        img = visual_tests.draw_arrow(img,robot_pose,object_pose,(0,0,255))
 
                 goal_cnt = goal_cnt + 1
 
@@ -152,7 +161,8 @@ class trajectoryGenerator:
         #     self.capture()
 
         i,j = self.utils.map2image(1.9 ,8.2)
-        new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz, self.goal_cnt)
+        new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz, self.patch_len,self.goal_cnt)
+        robot_pose, object_pose = self.utils.get_object_direction()
         x, y = self.utils.image2map(new_img_pt[0],new_img_pt[1])
         # x, y = self.utils.shift_goal((new_goal_x,new_goal_y),self.map_shift)
 
@@ -320,7 +330,7 @@ def main():
         Utils.print_usage(1)
     rospy.init_node('wpoints_generator', anonymous=True)
     
-    robot_navigation = trajectoryGenerator(args, False)
+    robot_navigation = trajectoryGenerator(args, True)
     robot_navigation.run()
 
     

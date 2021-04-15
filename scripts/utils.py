@@ -24,41 +24,13 @@ class Utils:
         self.img_height = 0
         self.m_px_ratio_x = 0.0
         self.m_px_ratio_y = 0.0
-        self.maps_x_ratio = 0.0 #set only if map_source is blender
-        self.maps_y_ratio = 0.0 #set only if map_source is blender
+        self.maps_x_ratio = 0.0
+        self.maps_y_ratio = 0.0 
+
+        self.robot_pose = 0
+        self.object_pose = 0
 
         self.set_map_params() #with harcoded dimensions (TODO parametrize them based on store in the future)
-
-        #trajectory image params
-        # self.planimetry_width = 42.5
-        # self.planimetry_height = 32.4
-        # self.img_width = 1602
-        # self.img_height = 1210
-
-
-        #Image pixels and planimetry meters do not check in trajectory image. 
-        # For now this difference is hardcoded below
-        # self.m_px_ratio_x = self.planimetry_width / (self.img_width-22-30)
-        # self.m_px_ratio_y = self.planimetry_height / (self.img_height-24-26)
-    
-        # self.store_width = self.img_width * self.m_px_ratio_x #42.5 
-        # self.store_height = self.img_height * self.m_px_ratio_y #32.4 
-
-        # #blender generated image params        
-        # self.blender_store_width = 45.0
-        # self.blender_store_height = 34.6
-        # self.blender_img_width = 1192
-        # self.blender_img_height = 918
-
-        # #TODO (for each store) proportions. Given a goal x,y in the trajectory image
-        # #we have to transform it for the blender map
-        # self.maps_x_ratio = self.blender_store_width / self.store_width 
-        # self.maps_y_ratio = self.blender_store_height / self.store_height
-
-        # #OK BUT :TODO RETRIEVE IT FROM MAP YAML (0.037721614)
-        # self.blender_px_m_ratio_x = self.blender_store_width / (self.blender_img_width)
-        # self.blender_px_m_ratio_y = self.blender_store_height / (self.blender_img_height)
-
 
 
 
@@ -237,18 +209,27 @@ class Utils:
 
         return np.average(patch) == 255
     
-    def find_feasible_point(self, store_map, curr_goal, patch_sz,iter):
+    def find_feasible_point(self, store_map, curr_goal, patch_sz, patch_len, iter):
         initial_patch = store_map[curr_goal[1]-patch_sz/2:curr_goal[1]+patch_sz/2,curr_goal[0]-patch_sz/2:curr_goal[0]+patch_sz/2]
         mean = np.average(initial_patch)
         new_x = 0
         new_y = 0
         if mean == 255:
             print("Waypoint number ", iter, "is already a good goal")
+            for slide_cnt in range(1,100): 
+                shelf_found, x_shelf, y_shelf = self.search_closest_shelf(store_map, curr_goal, patch_len, slide_cnt)
+                if shelf_found:
+                    print("SHELF FOUND!!!!!")
+                    self.robot_pose = curr_goal
+                    self.object_pose = (x_shelf, y_shelf)
+                    break
             return curr_goal #already a valid point
         
         for slide_cnt in range(1,100): 
-            found,new_x,new_y = self.slide_patch(store_map, curr_goal, patch_sz, slide_cnt)
-            if found:
+            good_spot_found,new_x,new_y = self.slide_patch(store_map, curr_goal, patch_sz, slide_cnt)
+            if good_spot_found:
+                self.robot_pose = (new_x,new_y)
+                self.object_pose = curr_goal
                 break
         return new_x,new_y
 
@@ -273,8 +254,46 @@ class Utils:
     def is_good_spot(self,patch):
         return np.average(patch) == 255
 
+    def search_closest_shelf(self,store_map, goal, patch_len, it):
+        #this searches the closest shelf with increasing line patches positions
+        # -----------
+        # | ------- |
+        # | |     | |
+        # | |  .  | |
+        # | |     | |
+        # | ------- |
+        # -----------
+        
+        i = goal[0]
+        j = goal[1]
+        #TODO also for patch above
+        if j-it > 0:
+            up_line = store_map[j-it,i-patch_len/2:i+patch_len/2]
+            if self.is_closest_shelf(up_line):
+                return 1,i,j-it
+        if j+it < store_map.shape[0]:
+            down_line = store_map[j+it,i-patch_len/2:i+patch_len/2]
+            if self.is_closest_shelf(down_line):        
+                return 1,i,j+it
+        if i-it > 0:
+            left_line = store_map[j-patch_len/2:j+patch_len/2,i-it]
+            if self.is_closest_shelf(left_line):
+                return 1,i-it,j
+        if j+it > store_map.shape[1]:  
+            right_line = store_map[j-patch_len/2:j+patch_len/2,i+it]
+            if self.is_closest_shelf(right_line):
+                return 1,i+it,j
+
+        return 0,0,0
+
+    def is_closest_shelf(self,patch):
+        return np.average(patch) == 0
+
     def get_ratios(self):
         return self.m_px_ratio_x, self.m_px_ratio_y
+
+    def get_object_direction(self):
+        return self.robot_pose,self.object_pose
 
     def set_map_image(self):
         rospack = rospkg.RosPack()
