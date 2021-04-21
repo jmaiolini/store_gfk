@@ -219,21 +219,19 @@ class Utils:
         new_y = 0
         #the waypoint is good, meaning is not on a shelf -> we modify only the object position (closest)
         if mean == 255:
+            self.robot_pose = curr_goal
             shelf_found = False
-        
             #we first try to look around for a shelf in the 4 canonical directions
-            for slide_cnt in range(1,100): 
+            for slide_cnt in range(1,80): 
                 shelf_found, x_shelf, y_shelf = self.search_closest_shelf(curr_goal, patch_len, slide_cnt)
                 if shelf_found:
-                    self.robot_pose = curr_goal
                     self.object_pose = (x_shelf, y_shelf)
                     break
             #if they are too far, we look for the closest point (here we capture also corners)
             if shelf_found == False: #after 100 pixel, if we do not find a small line we seek for the closest point
-                for slide_cnt in range(1,100): 
+                for slide_cnt in range(1,200): 
                     point_found, x_shelf_pt, y_shelf_pt = self.search_closest_point( curr_goal, slide_cnt)
                     if point_found:
-                        self.robot_pose = curr_goal
                         self.object_pose = (x_shelf_pt, y_shelf_pt)
                         break
             return curr_goal #already a valid point
@@ -242,11 +240,25 @@ class Utils:
         for slide_cnt in range(1,100): 
             good_spot_found,new_x,new_y = self.slide_patch( curr_goal, patch_sz, slide_cnt)
             if good_spot_found:
-                self.robot_pose = (new_x,new_y)
-                #now we look for a good object position
-                
-                self.object_pose = curr_goal
+                self.robot_pose = (new_x,new_y) 
+                # self.object_pose = curr_goal
                 break
+        shelf_found = False
+         #now we look for a good object position (as above) but with the new robot position
+        for slide_cnt in range(1,80): 
+            shelf_found, x_shelf, y_shelf = self.search_closest_shelf(self.robot_pose, patch_len, slide_cnt)
+            if shelf_found:
+                print("FOUND METHOD 1")
+                self.object_pose = (x_shelf, y_shelf)
+                break
+        
+        if shelf_found == False:
+            for slide_cnt in range(1,200): 
+                point_found, x_shelf_pt, y_shelf_pt = self.search_closest_point( self.robot_pose, slide_cnt)
+                if point_found:
+                    print("FOUND METHOD 2")
+                    self.object_pose = (x_shelf_pt, y_shelf_pt)
+                    break
         return new_x,new_y
 
     def slide_patch(self,goal, patch_sz, it):
@@ -306,54 +318,42 @@ class Utils:
         #make frame around as before
         i = goal[0]
         j = goal[1]
-        #TODO also for patch above
+        #TODO take the CLOSEST (euclidian) wrt the center and not the first as right now
         if j-it > 0:
             up_line = self.map_image[j-it,i-it:i+it]
-            if np.average(up_line) == 255:
-                return 0,0,0
-            else:
-                shift = 0
-                for x in up_line:
-                    if x == 0:
-                        return 1,i-it+shift,j-it
-                    else:
-                        shift = shift + 1
+            shift = 0
+            for x in up_line:
+                if x == 0:
+                    return 1,i-it+shift,j-it
+                else:
+                    shift = shift + 1
 
         if j+it < self.map_image.shape[0]:
             down_line = self.map_image[j+it,i-it:i+it]
-            if np.average(down_line) == 255:
-                return 0,0,0
-            else:
-                shift = 0
-                for x in down_line:
-                    if x == 0:
-                        return 1,i-it+x,j+it
-                    else:
-                        shift = shift + 1
+            shift = 0
+            for x in down_line:
+                if x == 0:
+                    return 1,i-it+shift,j+it
+                else:
+                    shift = shift + 1
 
         if i-it > 0:
             left_line = self.map_image[j-it:j+it,i-it]
-            if np.average(left_line) == 255:
-                return 0,0,0
-            else:
-                shift = 0
-                for y in left_line:
-                    if y == 0:
-                        return 1,i-it,j-it+y
-                    else:
-                        shift = shift + 1
+            shift = 0
+            for y in left_line:
+                if y == 0:
+                    return 1,i-it,j-it+shift
+                else:
+                    shift = shift + 1
 
         if i+it < self.map_image.shape[1]:  
             right_line = self.map_image[j-it:j+it,i+it]
-            if np.average(right_line) == 255:
-                return 0,0,0
-            else:
-                shift = 0
-                for y in right_line:
-                    if y == 0:
-                        return 1,i+it,j-it+y
-                    else:
-                        shift = shift + 1
+            shift = 0
+            for y in right_line:
+                if y == 0:
+                    return 1,i+it,j-it+shift
+                else:
+                    shift = shift + 1
 
         return 0,0,0
 

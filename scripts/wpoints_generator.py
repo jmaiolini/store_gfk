@@ -74,7 +74,7 @@ class trajectoryGenerator:
                 if robot_pose != 0 and object_pose != 0 :
                     img = visual_tests.draw_arrow(img,robot_pose,object_pose,(255,0,0))
                 if( i!=new_img_pt[0] or j != new_img_pt[1] ):
-                    img = visual_tests.draw_patch(img,(i,j),self.patch_sz,(0,0,255))
+                    # img = visual_tests.draw_patch(img,(i,j),self.patch_sz,(0,0,255))
                     # img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,0,0))
                     # img = visual_tests.draw_arrow(img,(i,j),(i+25,j),(0,0,255))
                     if robot_pose != 0 and object_pose != 0 :
