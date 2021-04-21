@@ -47,8 +47,10 @@ class Utils:
 
         - <map_source> put 0 to set wpoints from trajectory map (output of ANN)
                        put 1 to set wpoints from blender map
+        - <debug_mode> enable visualization simulating waypoints on the map
+                       or send real waypoints to the robot
           
-        Example: rosrun store_gfk wpoints_generator.py edeka 1 1
+        Example: rosrun store_gfk wpoints_generator.py edeka 1 1 False
         '''
 
         sys.exit(exit_code)
@@ -209,37 +211,51 @@ class Utils:
 
         return np.average(patch) == 255
     
-    def find_feasible_point(self, store_map, curr_goal, patch_sz, patch_len, iter):
-        initial_patch = store_map[curr_goal[1]-patch_sz/2:curr_goal[1]+patch_sz/2,curr_goal[0]-patch_sz/2:curr_goal[0]+patch_sz/2]
+    #this function returns 2 positions: the interested object on the shelf and the robot position in a free area
+    def find_feasible_point(self, curr_goal, patch_sz, patch_len, iter):
+        initial_patch = self.map_image[curr_goal[1]-patch_sz/2:curr_goal[1]+patch_sz/2,curr_goal[0]-patch_sz/2:curr_goal[0]+patch_sz/2]
         mean = np.average(initial_patch)
         new_x = 0
         new_y = 0
+        #the waypoint is good, meaning is not on a shelf -> we modify only the object position (closest)
         if mean == 255:
-            print("Waypoint number ", iter, "is already a good goal")
+            shelf_found = False
+        
+            #we first try to look around for a shelf in the 4 canonical directions
             for slide_cnt in range(1,100): 
-                shelf_found, x_shelf, y_shelf = self.search_closest_shelf(store_map, curr_goal, patch_len, slide_cnt)
+                shelf_found, x_shelf, y_shelf = self.search_closest_shelf(curr_goal, patch_len, slide_cnt)
                 if shelf_found:
-                    print("SHELF FOUND!!!!!")
                     self.robot_pose = curr_goal
                     self.object_pose = (x_shelf, y_shelf)
                     break
+            #if they are too far, we look for the closest point (here we capture also corners)
+            if shelf_found == False: #after 100 pixel, if we do not find a small line we seek for the closest point
+                for slide_cnt in range(1,100): 
+                    point_found, x_shelf_pt, y_shelf_pt = self.search_closest_point( curr_goal, slide_cnt)
+                    if point_found:
+                        self.robot_pose = curr_goal
+                        self.object_pose = (x_shelf_pt, y_shelf_pt)
+                        break
             return curr_goal #already a valid point
-        
+        #here we fo the same thing, however we need to modify also the robot position
+        #get a good robot position
         for slide_cnt in range(1,100): 
-            good_spot_found,new_x,new_y = self.slide_patch(store_map, curr_goal, patch_sz, slide_cnt)
+            good_spot_found,new_x,new_y = self.slide_patch( curr_goal, patch_sz, slide_cnt)
             if good_spot_found:
                 self.robot_pose = (new_x,new_y)
+                #now we look for a good object position
+                
                 self.object_pose = curr_goal
                 break
         return new_x,new_y
 
-    def slide_patch(self, store_map,goal, patch_sz, it):
+    def slide_patch(self,goal, patch_sz, it):
         i = goal[0]
         j = goal[1]
-        up_patch = store_map[j-patch_sz/2-it:j+patch_sz/2-it,i-patch_sz/2:i+patch_sz/2]
-        down_patch = store_map[j-patch_sz/2+it:j+patch_sz/2+it,i-patch_sz/2:i+patch_sz/2]
-        left_patch = store_map[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2-it:i+patch_sz/2-it]
-        right_patch = store_map[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2+it:i+patch_sz/2+it]
+        up_patch = self.map_image[j-patch_sz/2-it:j+patch_sz/2-it,i-patch_sz/2:i+patch_sz/2]
+        down_patch = self.map_image[j-patch_sz/2+it:j+patch_sz/2+it,i-patch_sz/2:i+patch_sz/2]
+        left_patch = self.map_image[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2-it:i+patch_sz/2-it]
+        right_patch = self.map_image[j-patch_sz/2:j+patch_sz/2,i-patch_sz/2+it:i+patch_sz/2+it]
 
         if self.is_good_spot(up_patch):
             return 1,i,j-it
@@ -254,7 +270,7 @@ class Utils:
     def is_good_spot(self,patch):
         return np.average(patch) == 255
 
-    def search_closest_shelf(self,store_map, goal, patch_len, it):
+    def search_closest_shelf(self, goal, patch_len, it):
         #this searches the closest shelf with increasing line patches positions
         # -----------
         # | ------- |
@@ -268,21 +284,76 @@ class Utils:
         j = goal[1]
         #TODO also for patch above
         if j-it > 0:
-            up_line = store_map[j-it,i-patch_len/2:i+patch_len/2]
+            up_line = self.map_image[j-it,i-patch_len/2:i+patch_len/2]
             if self.is_closest_shelf(up_line):
                 return 1,i,j-it
-        if j+it < store_map.shape[0]:
-            down_line = store_map[j+it,i-patch_len/2:i+patch_len/2]
+        if j+it < self.map_image.shape[0]:
+            down_line = self.map_image[j+it,i-patch_len/2:i+patch_len/2]
             if self.is_closest_shelf(down_line):        
                 return 1,i,j+it
         if i-it > 0:
-            left_line = store_map[j-patch_len/2:j+patch_len/2,i-it]
+            left_line = self.map_image[j-patch_len/2:j+patch_len/2,i-it]
             if self.is_closest_shelf(left_line):
                 return 1,i-it,j
-        if j+it > store_map.shape[1]:  
-            right_line = store_map[j-patch_len/2:j+patch_len/2,i+it]
+        if i+it < self.map_image.shape[1]:  
+            right_line = self.map_image[j-patch_len/2:j+patch_len/2,i+it]
             if self.is_closest_shelf(right_line):
                 return 1,i+it,j
+
+        return 0,0,0
+    
+    def search_closest_point(self, goal, it):
+        #make frame around as before
+        i = goal[0]
+        j = goal[1]
+        #TODO also for patch above
+        if j-it > 0:
+            up_line = self.map_image[j-it,i-it:i+it]
+            if np.average(up_line) == 255:
+                return 0,0,0
+            else:
+                shift = 0
+                for x in up_line:
+                    if x == 0:
+                        return 1,i-it+shift,j-it
+                    else:
+                        shift = shift + 1
+
+        if j+it < self.map_image.shape[0]:
+            down_line = self.map_image[j+it,i-it:i+it]
+            if np.average(down_line) == 255:
+                return 0,0,0
+            else:
+                shift = 0
+                for x in down_line:
+                    if x == 0:
+                        return 1,i-it+x,j+it
+                    else:
+                        shift = shift + 1
+
+        if i-it > 0:
+            left_line = self.map_image[j-it:j+it,i-it]
+            if np.average(left_line) == 255:
+                return 0,0,0
+            else:
+                shift = 0
+                for y in left_line:
+                    if y == 0:
+                        return 1,i-it,j-it+y
+                    else:
+                        shift = shift + 1
+
+        if i+it < self.map_image.shape[1]:  
+            right_line = self.map_image[j-it:j+it,i+it]
+            if np.average(right_line) == 255:
+                return 0,0,0
+            else:
+                shift = 0
+                for y in right_line:
+                    if y == 0:
+                        return 1,i+it,j-it+y
+                    else:
+                        shift = shift + 1
 
         return 0,0,0
 

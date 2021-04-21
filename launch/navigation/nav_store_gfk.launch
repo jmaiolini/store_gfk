@@ -10,19 +10,26 @@
   <arg name="rviz"     default="true"/> <!-- enable rviz -->
   <arg name="gzclient" default="false"/> <!-- enable gazebo -->
 
-  <!-- Modify robot initial pose. Beware this do not change move_base params so you have to change them manually. -->
-  <arg name="init_pose_x" default="0.0"/>
-  <arg name="init_pose_y" default="0.0"/>
-  <arg name="init_pose_Y" default="0.0"/>
-  <!-- to not break API with Pal Robotics -->
-  <arg name="init_pose" default="-x $(arg init_pose_x) -y $(arg init_pose_y) -z 0.0 -R 0.0 -P 0.0 -Y $(arg init_pose_Y)"/> 
-  
   <!-- Modify map origin (must check the shift in .yaml file) -->
   <arg name="map_shift_x" default="-5.0"/>
   <arg name="map_shift_y" default="-5.0"/>
   <arg name="map_shift_Y" default="0.0"/>
   <!-- param used from wpoint generator to shift trajectories based on map origin-->
   <param name="map_shift" value="$(arg map_shift_x) $(arg map_shift_y) $(arg map_shift_Y)"/>
+
+<!-- from pal_navigation_cfg_public/pal_navigation_cfg_pmb2/config/base/common/local_costmap_public_sim.yaml-->
+<param name="robot_radius" value="0.275"/>
+
+ <arg name="visual_check_wp_generator"   default="True"/> <!-- capital letter for python-->
+
+<group unless="$(arg visual_check_wp_generator)">
+
+  <!-- Modify robot initial pose. Beware this do not change move_base params so you have to change them manually. -->
+  <arg name="init_pose_x" default="0.0"/>
+  <arg name="init_pose_y" default="0.0"/>
+  <arg name="init_pose_Y" default="0.0"/>
+  <!-- to not break API with Pal Robotics -->
+  <arg name="init_pose" default="-x $(arg init_pose_x) -y $(arg init_pose_y) -z 0.0 -R 0.0 -P 0.0 -Y $(arg init_pose_Y)"/> 
 
   <arg name="public_sim"   default="true"/>
   <arg name="world"  default="hasslochTextured"/> <!-- hasslochTextured has textures --> 
@@ -93,9 +100,11 @@
     </group>
   </group>
 
+</group> 
+
   <group if="$(arg generator_on)">
       <node name="wpoints_generator" pkg="store_gfk" type="wpoints_generator.py" output="screen" 
-        args="$(arg store_name) $(arg traj_num) $(arg map_source)"/>
+        args="$(arg store_name) $(arg traj_num) $(arg map_source) $(arg visual_check_wp_generator)"/>
     </group> 
 
 </launch>
