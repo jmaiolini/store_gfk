@@ -34,6 +34,10 @@ class trajectoryGenerator:
         #creates folders needed to store the final acquisitions
         self.utils.dir_exists( self.base_path + 'acquisitions/' + self.store_name + '/' + self.num_trajectory)
 
+        self.utils.parse_shelfs(self.base_path + 'models/hassloch/shelfs/shelfs.json') #REDO PATH HERE
+
+        self.shelfs = self.utils.get_shelfs()
+
         #load current trajectory and tranform it. full_trajectory is 
         # in the correct reference for the robot 
         self.full_trajectory = self.utils.load_trajectory() #TODO make rospack only used here
@@ -55,12 +59,20 @@ class trajectoryGenerator:
             map_image = self.utils.get_map_image()
             img = self.utils.gray2bgr(map_image)
 
+            for shelf in self.shelfs:
+                print(shelf.x)
+                p1_x,p1_y = self.utils.map2image(shelf.x,shelf.y)
+                print(p1_x,p1_y)
+                w,h = self.utils.meters2pixels(shelf.w,shelf.h)
+                img = visual_tests.draw_shelf(img,(p1_x,p1_y),(w,h))
+            self.utils.show_img_and_wait_key("shelfs", img) 
             #The drawings are the following:
             # at each waypoint of the trajectory we have a blue circle representing the robot size
             # a yellow square showing the area on which we ask if the waypoint is good or needs to be refined
             # arrow (for now only pointing at 0 degrees) to show the robot heading
             #if the point is bad, additional squares and arrows are shown
             goal_cnt = 0
+            sys.exit(0)
             for position in self.full_trajectory:
                 i,j = self.utils.map2image(position[0],position[1])
                    
@@ -81,7 +93,7 @@ class trajectoryGenerator:
                         img = visual_tests.draw_arrow(img,robot_pose,object_pose,(255,0,0))
                          
                 goal_cnt = goal_cnt + 1
-                self.utils.show_img_and_wait_key("recursive", img) 
+                # self.utils.show_img_and_wait_key("recursive", img) 
             
             self.utils.show_img_and_wait_key("Patches",img)
             self.utils.save_image(self.base_path + '/patches.jpg', img)

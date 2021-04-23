@@ -8,6 +8,7 @@ import rospkg
 import cv2
 import numpy as np
 import math 
+from shelf import Shelf
 
 class Utils:
 
@@ -31,6 +32,8 @@ class Utils:
         self.object_pose = 0
 
         self.set_map_params() #with harcoded dimensions (TODO parametrize them based on store in the future)
+
+        self.shelfs = list()
 
 
 
@@ -98,9 +101,24 @@ class Utils:
             self.maps_x_ratio = blender_store_width / traj_store_width 
             self.maps_y_ratio = blender_store_height / traj_store_height
             
-
+ 
         else:
             rospy.signal_shutdown("Wrong map source param!")
+
+    def parse_shelfs(self,filepath):
+        if os.path.exists(filepath):
+            with open(filepath,'rb') as json_file:
+                data = json.load(json_file)
+        else:
+            rospy.signal_shutdown('Could not find shelfs file.\nCheck file path.')
+        
+        for shelf in data['shelfs']:
+            new_shelf = Shelf(shelf['id'],shelf['x'],shelf['y'],shelf['w'],shelf['h'],shelf['dir'])
+            self.shelfs.append(new_shelf)
+            
+
+    def get_shelfs(self):
+        return self.shelfs
 
     def load_trajectory(self):
         rospack = rospkg.RosPack()
@@ -110,7 +128,7 @@ class Utils:
             with open(filepath) as f:
                 data = json.load(f)
         else:
-            rospy.signal_shutdown('Could not find the trajectory file.\nExiting.')
+            rospy.signal_shutdown('Could not find the trajectory file.\nCheck file path.')
 
             
         return self.transform_waypoints(data["points"])
@@ -192,24 +210,6 @@ class Utils:
         corr_pose = (waypoint[0]+float(x), waypoint[1]+float(y))
 
         return corr_pose
-
-    def is_good_goal_meters(self, goal):
-        ksize = 10 #for each side (based on robot radius)
-        # x = self.maps_x_ratio * goal[0]
-        # y = self.maps_y_ratio * goal[1]
-        i,j = self.map2image(goal[0],goal[1])
-        patch = self.map_image[j-ksize:j+ksize,i-ksize:i+ksize]
-
-        return np.average(patch) == 255
-
-    def is_good_goal_pixels(self, goal):
-        ksize = 10 #for each side (based on robot radius)
-        # x = self.maps_x_ratio * goal[0]
-        # y = self.maps_y_ratio * goal[1]
-        # i,j = self.map2image(x,y)
-        patch = self.map_image[goal[1]-ksize:goal[1]+ksize,goal[0]-ksize:goal[0]+ksize]
-
-        return np.average(patch) == 255
     
     #this function returns 2 positions: the interested object on the shelf and the robot position in a free area
     def find_feasible_point(self, curr_goal, patch_sz, patch_len, iter):
