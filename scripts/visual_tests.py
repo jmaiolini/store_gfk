@@ -84,7 +84,7 @@ def show_good_bad_points(waypoints,map_source):
 
 #drawing functions
 def draw_point(img,pt,color):
-    return cv2.circle(img,pt,3,color)
+    return cv2.circle(img,pt,3,color,-1)
 
 def draw_robot(img,pt,radius,color):
     return cv2.circle(img,pt,int(radius),color,2)

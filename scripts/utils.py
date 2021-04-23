@@ -105,6 +105,7 @@ class Utils:
         else:
             rospy.signal_shutdown("Wrong map source param!")
 
+    #extracts shelfs from file and convert them into image coordinates
     def parse_shelfs(self,filepath):
         if os.path.exists(filepath):
             with open(filepath,'rb') as json_file:
@@ -113,8 +114,10 @@ class Utils:
             rospy.signal_shutdown('Could not find shelfs file.\nCheck file path.')
         
         for shelf in data['shelfs']:
-            new_shelf = Shelf(shelf['id'],shelf['x'],shelf['y'],shelf['w'],shelf['h'],shelf['dir'])
-            self.shelfs.append(new_shelf)
+            p1_x,p1_y = self.map2image(shelf['x'],shelf['y'])
+            w,h = self.meters2pixels(shelf['w'],shelf['h'])
+            img_shelf = Shelf(shelf['id'],p1_x,p1_y,w,h,shelf['dir'])
+            self.shelfs.append(img_shelf)
             
 
     def get_shelfs(self):
@@ -423,6 +426,12 @@ class Utils:
 
     def pi(self):
         return math.pi
+
+    def is_inside_shelf(self,shelfs,pt):
+        for shelf in shelfs:
+            if shelf.x <= pt[0] <= shelf.x+shelf.w and shelf.y <= pt[1] <= shelf.y+shelf.h:
+                return True       
+        return False
 
 
 

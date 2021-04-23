@@ -57,15 +57,19 @@ class trajectoryGenerator:
             #performing all the steps to send goal but just for visualization except the map shift
             self.utils.set_map_image() #to check if the given goal is good 
             map_image = self.utils.get_map_image()
+            shelfs_img = self.utils.gray2bgr(map_image)
             img = self.utils.gray2bgr(map_image)
 
             for shelf in self.shelfs:
-                print(shelf.x)
-                p1_x,p1_y = self.utils.map2image(shelf.x,shelf.y)
-                print(p1_x,p1_y)
-                w,h = self.utils.meters2pixels(shelf.w,shelf.h)
-                img = visual_tests.draw_shelf(img,(p1_x,p1_y),(w,h))
-            self.utils.show_img_and_wait_key("shelfs", img) 
+                shelfs_img = visual_tests.draw_shelf(img,(shelf.x,shelf.y),(shelf.w,shelf.h))
+            
+            for position in self.full_trajectory:
+                i,j = self.utils.map2image(position[0],position[1])
+                if self.utils.is_inside_shelf(self.shelfs,(i,j)):
+                    shelfs_img = visual_tests.draw_point(shelfs_img,(i,j),(0,0,255))
+                else:
+                    shelfs_img = visual_tests.draw_point(shelfs_img,(i,j),(0,255,0))
+            self.utils.show_img_and_wait_key("Wpoints Inside Shelfs Checks", shelfs_img) 
             #The drawings are the following:
             # at each waypoint of the trajectory we have a blue circle representing the robot size
             # a yellow square showing the area on which we ask if the waypoint is good or needs to be refined
