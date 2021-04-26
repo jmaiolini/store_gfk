@@ -2,10 +2,13 @@
 
 class Shelf:
 
-    def __init__(self, id=0, x=0.0, y=0.0, w=0.0, h=0.0, dir=''):
+    def __init__(self, id=0, x=0.0, y=0.0, z=0.0, w=0.0, h=0.0, dir=''):
         self.id = id
         self.x = x
         self.y = y
+        self.z = z #in meters
         self.w = w
         self.h = h
         self.dir = dir
+    
+        self.center = (self.x + int(self.w/2), self.y + int(self.h/2))

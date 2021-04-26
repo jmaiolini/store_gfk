@@ -97,7 +97,11 @@ def draw_patch(img, pt, psize,color):
     pt2 = (int(pt[0]+psize/2),int(pt[1]+psize/2))
     return cv2.rectangle(img,pt1,pt2,color,-1)
 
-def draw_shelf(img,pt,size):
-    return cv2.rectangle(img,pt,(pt[0]+size[0],pt[1]+size[1]),(0,0,255,0.5),2)
+def draw_shelf(img,shelf):
+    cv2.putText(img,shelf.id,(shelf.x+int(shelf.w/2)-5,shelf.y+int(shelf.h/2)+5),cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,0,255),2)
+    return cv2.rectangle(img,(shelf.x,shelf.y),(shelf.x+shelf.w,shelf.y+shelf.h),(0,0,255,0.5),2)
+
+def draw_roi(img,shelf):
+    return cv2.rectangle(img,(shelf.x,shelf.y),(shelf.x+shelf.w,shelf.y+shelf.h),(0,255,0,0.5),2)
 
 

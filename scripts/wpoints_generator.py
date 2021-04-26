@@ -13,6 +13,7 @@ from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan, Image, CameraInfo
 from utils import Utils
 import visual_tests
+from cameras import CamerasParams
 
 class trajectoryGenerator:
 
@@ -33,10 +34,9 @@ class trajectoryGenerator:
 
         #creates folders needed to store the final acquisitions
         self.utils.dir_exists( self.base_path + 'acquisitions/' + self.store_name + '/' + self.num_trajectory)
-
         self.utils.parse_shelfs(self.base_path + 'models/hassloch/shelfs/shelfs.json') #REDO PATH HERE
-
         self.shelfs = self.utils.get_shelfs()
+
 
         #load current trajectory and tranform it. full_trajectory is 
         # in the correct reference for the robot 
@@ -48,7 +48,10 @@ class trajectoryGenerator:
         self.patch_sz = 30 #based on the robot radius (must be divisible by 2)
         self.patch_len = 10 #(must be divisible by 2)
         
-        px_robot_radius = self.utils.meters2pixels(self.robot_radius,0)[0]
+        self.px_robot_radius = self.utils.meters2pixels(self.robot_radius,0)[0]
+
+        self.utils.calculate_repulsive_areas()
+        self.repulsive_areas = self.utils.get_repulsive_areas()
 
         self.goal_cnt = 0
         
@@ -61,15 +64,25 @@ class trajectoryGenerator:
             img = self.utils.gray2bgr(map_image)
 
             for shelf in self.shelfs:
-                shelfs_img = visual_tests.draw_shelf(img,(shelf.x,shelf.y),(shelf.w,shelf.h))
+                shelfs_img = visual_tests.draw_shelf(img,shelf)
+            
+            for rep_area in self.repulsive_areas:
+                shelfs_img = visual_tests.draw_roi(img,rep_area)
             
             for position in self.full_trajectory:
                 i,j = self.utils.map2image(position[0],position[1])
-                if self.utils.is_inside_shelf(self.shelfs,(i,j)):
+                query_area = self.utils.find_query_shelf((i,j)) #getting rep area, not shelf
+                if query_area != 0:
+                    shelfs_img = visual_tests.draw_arrow(shelfs_img,(i,j),query_area.center,(0,255,0))
+                    
+                if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
                     shelfs_img = visual_tests.draw_point(shelfs_img,(i,j),(0,0,255))
                 else:
                     shelfs_img = visual_tests.draw_point(shelfs_img,(i,j),(0,255,0))
+            
             self.utils.show_img_and_wait_key("Wpoints Inside Shelfs Checks", shelfs_img) 
+
+            self.utils.save_image(self.base_path + '/shelfs_check.jpg', shelfs_img)
             #The drawings are the following:
             # at each waypoint of the trajectory we have a blue circle representing the robot size
             # a yellow square showing the area on which we ask if the waypoint is good or needs to be refined
@@ -84,14 +97,14 @@ class trajectoryGenerator:
                 robot_pose, object_pose = self.utils.get_object_direction()
                 
                 img = visual_tests.draw_patch(img,new_img_pt,self.patch_sz,(0,255,0))
-                # img = visual_tests.draw_robot(img,new_img_pt,px_robot_radius,(255,0,0))
+                # img = visual_tests.draw_robot(img,new_img_pt,self.px_robot_radius,(255,0,0))
                 # img = visual_tests.draw_arrow(img,new_img_pt,(new_img_pt[0]+25,new_img_pt[1]),(0,255,0))
                 #this happens if shelfs are too far
                 if robot_pose != 0 and object_pose != 0 :
                     img = visual_tests.draw_arrow(img,robot_pose,object_pose,(255,0,0))
                 if( i!=new_img_pt[0] or j != new_img_pt[1] ):
                     # img = visual_tests.draw_patch(img,(i,j),self.patch_sz,(0,0,255))
-                    # img = visual_tests.draw_robot(img,(i,j),px_robot_radius,(255,0,0))
+                    # img = visual_tests.draw_robot(img,(i,j),self.px_robot_radius,(255,0,0))
                     # img = visual_tests.draw_arrow(img,(i,j),(i+25,j),(0,0,255))
                     if robot_pose != 0 and object_pose != 0 :
                         img = visual_tests.draw_arrow(img,robot_pose,object_pose,(255,0,0))

@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import math 
 from shelf import Shelf
+from cameras import CamerasParams
 
 class Utils:
 
@@ -34,6 +35,7 @@ class Utils:
         self.set_map_params() #with harcoded dimensions (TODO parametrize them based on store in the future)
 
         self.shelfs = list()
+        self.repulsive_areas = list()
 
 
 
@@ -105,6 +107,11 @@ class Utils:
         else:
             rospy.signal_shutdown("Wrong map source param!")
 
+    ##################################
+    ##SHELFS/FORBIDDEN AREAS UTILS
+    ##################################
+
+    #TODO in init
     #extracts shelfs from file and convert them into image coordinates
     def parse_shelfs(self,filepath):
         if os.path.exists(filepath):
@@ -116,13 +123,56 @@ class Utils:
         for shelf in data['shelfs']:
             p1_x,p1_y = self.map2image(shelf['x'],shelf['y'])
             w,h = self.meters2pixels(shelf['w'],shelf['h'])
-            img_shelf = Shelf(shelf['id'],p1_x,p1_y,w,h,shelf['dir'])
+            img_shelf = Shelf(shelf['id'],p1_x,p1_y,shelf['z'],w,h,shelf['dir'])
             self.shelfs.append(img_shelf)
             
+    #TODO in init
+    def calculate_repulsive_areas(self):
+    
+        for shelf in self.shelfs:
+            d_min = (shelf.z - CamerasParams.top_camera_height)/math.tan(CamerasParams.vfov/2)
+            d_min_px = self.map2image(d_min,0)[0]
+   
+            repulsive_shelf = Shelf(shelf.id,shelf.x-d_min_px,shelf.y-d_min_px,0.0,shelf.w+2*d_min_px,shelf.h+2*d_min_px,shelf.dir) #basicallly enhancing the shelfs
+            self.repulsive_areas.append(repulsive_shelf)
+
+    def is_inside_a_repulsive_area(self,regions,pt):
+        for region in regions:
+            if region.x <= pt[0] <= region.x+region.w and region.y <= pt[1] <= region.y+region.h:
+                return True       
+        return False
+
+    #since shelfs and repulsive areas share the same center and id, we get the query shelf by using the repulsive areas
+    def find_query_shelf(self,goal):
+        dist_to_shelf_center = 99999
+        query_shelf = 0
+
+        for rep_area in self.repulsive_areas:
+            dist = self.calc_eucl_dist(rep_area.center,goal)
+            if  dist < dist_to_shelf_center:
+                query_shelf = rep_area
+                dist_to_shelf_center = dist
+
+        if query_shelf == 0:
+            print("Something went wrong when calculating query shelf")
+            sys.exit(-1)
+        
+        if dist_to_shelf_center > 150: #the generated wpoint is too far/wrong, thus not scanning
+            return 0
+
+        return query_shelf
+
+    def get_repulsive_areas(self):
+        return self.repulsive_areas 
 
     def get_shelfs(self):
         return self.shelfs
 
+    ##################################
+    ##TRAJECTORY UTILS
+    ##################################
+
+ #TODO in init instead of in wpoint generator
     def load_trajectory(self):
         rospack = rospkg.RosPack()
         filepath = rospack.get_path('store_gfk') + '/trajectories/' + self.filename
@@ -135,7 +185,7 @@ class Utils:
 
             
         return self.transform_waypoints(data["points"])
-
+ #TODO in init instead of in wpoint generator
     def transform_waypoints(self, store_waypoints):
         robot_waypoints = list()
         
@@ -144,7 +194,7 @@ class Utils:
             robot_waypoints.append( new_coord )
 
         return robot_waypoints
-
+ #TODO in init instead of in wpoint generator
     def correct_trajectory(self,traj, map_shift):
         corr_traj = list()
         x,y,Y = map_shift.split() 
@@ -153,7 +203,7 @@ class Utils:
             corr_pose = (pose[0]+float(x), pose[1]+float(y))
             corr_traj.append(corr_pose)
         return corr_traj
-        
+        #TODO in init 
     def tranform_position(self, x_traj, y_traj):
 
         x = self.maps_x_ratio * x_traj
@@ -169,6 +219,9 @@ class Utils:
 
         return ( x_map, y_map )
 
+    ##################################
+    ## COORDINATES UTILS
+    ##################################
 
     def pixels2meters(self,x_px,y_px):
         x_m = x_px * self.m_px_ratio_x
@@ -213,6 +266,10 @@ class Utils:
         corr_pose = (waypoint[0]+float(x), waypoint[1]+float(y))
 
         return corr_pose
+
+    ##################################
+    ## OLD APPROACH FEASIBLE POINTS UTILS
+    ##################################
     
     #this function returns 2 positions: the interested object on the shelf and the robot position in a free area
     def find_feasible_point(self, curr_goal, patch_sz, patch_len, iter):
@@ -251,7 +308,6 @@ class Utils:
         for slide_cnt in range(1,80): 
             shelf_found, x_shelf, y_shelf = self.search_closest_shelf(self.robot_pose, patch_len, slide_cnt)
             if shelf_found:
-                print("FOUND METHOD 1")
                 self.object_pose = (x_shelf, y_shelf)
                 break
         
@@ -259,7 +315,6 @@ class Utils:
             for slide_cnt in range(1,200): 
                 point_found, x_shelf_pt, y_shelf_pt = self.search_closest_point( self.robot_pose, slide_cnt)
                 if point_found:
-                    print("FOUND METHOD 2")
                     self.object_pose = (x_shelf_pt, y_shelf_pt)
                     break
         return new_x,new_y
@@ -369,6 +424,10 @@ class Utils:
     def get_object_direction(self):
         return self.robot_pose,self.object_pose
 
+    ##################################
+    ## MAP UTILS
+    ##################################
+
     def set_map_image(self):
         rospack = rospkg.RosPack()
         filepath = rospack.get_path('store_gfk')
@@ -383,7 +442,10 @@ class Utils:
     def get_map_image(self):
         return self.map_image
 
-    #opencv utils
+    ##################################
+    ## OPENCV UTILS
+    ##################################
+
     def show_img_and_wait_key(self,window_name,img):
         cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
         cv2.resizeWindow(window_name, int(1602/2), int(1210/2))
@@ -403,7 +465,9 @@ class Utils:
     def bgr2gray(self,image):
         return cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
 
-    #miscellaneous
+    ##################################
+    ## MISCELLANEOUS UTILS
+    ##################################  
 
     def save_pose(self,path,time,x,y,yaw):
         f = open(path, "w")
@@ -424,14 +488,12 @@ class Utils:
     def create_dir(self,path):
         return os.makedirs(path)
 
+    def calc_eucl_dist(self,p1,p2):
+       return math.sqrt((p2[0] - p1[0])**2 + (p1[1] - p2[1])**2)
+
     def pi(self):
         return math.pi
 
-    def is_inside_shelf(self,shelfs,pt):
-        for shelf in shelfs:
-            if shelf.x <= pt[0] <= shelf.x+shelf.w and shelf.y <= pt[1] <= shelf.y+shelf.h:
-                return True       
-        return False
 
 
 
