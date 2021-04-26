@@ -72,14 +72,19 @@ class trajectoryGenerator:
             for position in self.full_trajectory:
                 i,j = self.utils.map2image(position[0],position[1])
                 query_area = self.utils.find_query_shelf((i,j)) #getting rep area, not shelf
+                #since we have a query shelf for each desired position, we can associate a dictionary
+                #with key the goal counter (append 0,0 if query_area i s 0). This is TODO, for now we iterate
+                #over all of them (does not affect planner since offline)
                 if query_area != 0:
                     shelfs_img = visual_tests.draw_arrow(shelfs_img,(i,j),query_area.center,(0,255,0))
                     
                 if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
-                    shelfs_img = visual_tests.draw_point(shelfs_img,(i,j),(0,0,255))
+                    valid_waypoint = self.utils.push_waypoint((i,j),query_area,self.patch_sz)
+                    shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(255,0,0))
                 else:
-                    shelfs_img = visual_tests.draw_point(shelfs_img,(i,j),(0,255,0))
-            
+                    valid_waypoint = (i,j)
+                    shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
+               
             self.utils.show_img_and_wait_key("Wpoints Inside Shelfs Checks", shelfs_img) 
 
             self.utils.save_image(self.base_path + '/shelfs_check.jpg', shelfs_img)

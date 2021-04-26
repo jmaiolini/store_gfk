@@ -133,7 +133,7 @@ class Utils:
             d_min = (shelf.z - CamerasParams.top_camera_height)/math.tan(CamerasParams.vfov/2)
             d_min_px = self.map2image(d_min,0)[0]
    
-            repulsive_shelf = Shelf(shelf.id,shelf.x-d_min_px,shelf.y-d_min_px,0.0,shelf.w+2*d_min_px,shelf.h+2*d_min_px,shelf.dir) #basicallly enhancing the shelfs
+            repulsive_shelf = Shelf(shelf.id,shelf.x-d_min_px,shelf.y-d_min_px,shelf.z,shelf.w+2*d_min_px,shelf.h+2*d_min_px,shelf.dir) #basicallly enhancing the shelfs
             self.repulsive_areas.append(repulsive_shelf)
 
     def is_inside_a_repulsive_area(self,regions,pt):
@@ -161,6 +161,42 @@ class Utils:
             return 0
 
         return query_shelf
+    
+    def push_waypoint(self,goal,rep_area,patch_sz):
+        boundaries = list()
+    
+        #as [left_boundary,right_boundary,top_boundary,bottom_boundary] if vertical to reduce bias
+        l = (rep_area.x,goal[1])
+        r = (rep_area.x + rep_area.w,goal[1])
+        t = (goal[0],rep_area.y)
+        b = (goal[0],rep_area.y + rep_area.h)
+        boundaries = [l,r,t,b]
+ 
+        #the capture position is too close wrt patch size
+        print(rep_area.z)
+        if rep_area.z < 2:
+            l2 = (rep_area.x - int(patch_sz/4),goal[1]) 
+            r2 = (rep_area.x + rep_area.w + int(patch_sz/4),goal[1])
+            t2 = (goal[0],rep_area.y- int(patch_sz/4))
+            b2 = (goal[0],rep_area.y + rep_area.h + int(patch_sz/4))
+            boundaries = [l2,r2,t2,b2]
+
+        dists = list()
+        for boundary in boundaries:
+            dists.append(self.calc_eucl_dist(goal,boundary))
+            
+        sorted_dists_idx = sorted(range(len(dists)), key=lambda k: dists[k])
+
+        for idx in sorted_dists_idx:
+            new_goal = boundaries[idx]
+            print("new goal now ", new_goal)
+            patch = self.map_image[new_goal[1]-patch_sz/2:new_goal[1]+patch_sz/2,new_goal[0]-patch_sz/2:new_goal[0]+patch_sz/2]
+            if(self.is_good_spot(patch)):
+                return new_goal
+        print("Could not find a feasible position for this waypoint. Aborting scanning")
+        return 0,0
+
+        
 
     def get_repulsive_areas(self):
         return self.repulsive_areas 
