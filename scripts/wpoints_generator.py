@@ -24,8 +24,14 @@ class trajectoryGenerator:
         self.store_name = args[1]
         self.num_trajectory = args[2]
         self.map_source = args[3]
-        debug_mode = bool(args[4])
+        debug_mode = bool()
+        if args[4] == 'True' or args[4] == 'true':
+            debug_mode = True
+        elif args[4] == 'False' or args[4] == 'false':
+            debug_mode = False
 
+        print(type(debug_mode))
+        print(debug_mode)
         rospack = rospkg.RosPack()
         self.base_path = rospack.get_path('store_gfk') + '/'
 
@@ -54,9 +60,11 @@ class trajectoryGenerator:
         self.repulsive_areas = self.utils.get_repulsive_areas()
 
         self.goal_cnt = 0
-        
-    
-        if debug_mode:
+       
+        if debug_mode == True :
+            #visual_tests.run()
+            #sys.exit(0)
+            
             #performing all the steps to send goal but just for visualization except the map shift
             self.utils.set_map_image() #to check if the given goal is good 
             map_image = self.utils.get_map_image()
@@ -179,44 +187,71 @@ class trajectoryGenerator:
 
 
     def run(self):
+        
 
         self.utils.set_map_image() #to check if the given goal is good 
         map_image = self.utils.get_map_image()
         img = self.utils.gray2bgr(map_image)
 
+        #######################
+        ## OLD METHOD (patch search)
+        #######################
+
         # for position in self.full_trajectory:
         #     #this double transformation is required
-        #     i,j = self.utils.map2image(position[0],position[1])
-        #     new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz)
-        #     new_goal_x, new_goal_y = self.utils.image2map(new_img_pt[0],new_img_pt[1])
-        #     x, y = self.utils.shift_goal((new_goal_x,new_goal_y),self.map_shift)
+        #   i,j = self.utils.map2image(position[0],position[1])
+        #   new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz, self.patch_len,self.goal_cnt)
+        #   robot_pose, object_pose = self.utils.get_object_direction()
+        #   x, y = self.utils.image2map(new_img_pt[0],new_img_pt[1])
+        #   x, y = self.utils.shift_goal((new_goal_x,new_goal_y),self.map_shift)
 
-        #     self.send_waypoint(x, y)
-        #     self.goal_cnt = self.goal_cnt + 1
+        #   self.send_waypoint(x, y)
+        #   self.goal_cnt = self.goal_cnt + 1
                 
-        #     time.sleep(1.0)
-        #     self.capture()
+        #   time.sleep(1.0)
+        #   self.align()
+        #   time.sleep(1.0)
+        #   self.capture() 
 
-        i,j = self.utils.map2image(1.9 ,8.2)
-        new_img_pt = self.utils.find_feasible_point(img,(i,j),self.patch_sz, self.patch_len,self.goal_cnt)
-        robot_pose, object_pose = self.utils.get_object_direction()
-        x, y = self.utils.image2map(new_img_pt[0],new_img_pt[1])
-        # x, y = self.utils.shift_goal((new_goal_x,new_goal_y),self.map_shift)
-
-        self.send_waypoint(x, y)
-        self.goal_cnt = self.goal_cnt + 1
+        #######################
+        ## NEW METHOD (repulsive areas)
+        #######################
             
-        time.sleep(1.0)
-        self.align()
-        time.sleep(1.0)
-        self.capture() 
+        # for position in self.full_trajectory:
+            # i,j = self.utils.map2image(position[0],position[1])
+        i,j = self.utils.map2image(6.9 ,15.0)
+        img = visual_tests.draw_point(img,(i,j),(0,0,255),5)
+        self.utils.show_img_and_wait_key("abba",img)
+        query_area = self.utils.find_query_shelf((i,j)) #getting rep area, not shelf
+        #since we have a query shelf for each desired position, we can associate a dictionary
+        #with key the goal counter (append 0,0 if query_area i s 0). This is TODO, for now we iterate
+        #over all of them (does not affect planner since offline)
+        if query_area != 0: #valid shelf/area found
+            valid_waypoint = (0,0)
+            if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
+                valid_waypoint = self.utils.push_waypoint((i,j),query_area,self.patch_sz)
+            else:
+                valid_waypoint = (i,j)
+
+            #if the generated waypoint from CNN is in good we send it, otherwise we skip it
+            if valid_waypoint != (0,0):
+                x, y = self.utils.image2map(valid_waypoint[0],valid_waypoint[1])
+                x, y = self.utils.shift_goal((x,y),self.map_shift)
+
+                self.send_waypoint(x, y)
+                self.goal_cnt = self.goal_cnt + 1
+                    
+                time.sleep(1.0)
+                self.align()
+                time.sleep(1.0)
+                self.capture(query_area) 
   
         rospy.signal_shutdown("Reached last goal, shutting down wpoint generator node")
         rospy.logdebug("Reached last goal, shutting down wpoint generator node")
 
 
     def send_waypoint(self, x, y):
-
+        print("Sending waypoint!")
         self.goal.target_pose.header.stamp = rospy.Time.now()
         self.goal.target_pose.pose.position.x = x
         self.goal.target_pose.pose.position.y = y
@@ -259,7 +294,7 @@ class trajectoryGenerator:
             self.cmd_vel_pub.publish(msg)
             curr_yaw = self.pose.pose.pose.orientation.z
         
-    def capture(self):
+    def capture(self, query_area):
 
         path = self.base_path + 'acquisitions/' + self.store_name + '/' + str(self.num_trajectory) + '/'
         self.utils.dir_exists( path + str(self.goal_cnt) )
@@ -300,7 +335,7 @@ class trajectoryGenerator:
         # except CvBridgeError as e:
         #     print(e)
 
-        
+        #save images
         self.utils.save_image( path + str(self.goal_cnt) + '/top_left_rgb.jpg', tl_rgb_img)
         # self.utils.save_image(path + str(self.goal_cnt) + '/top_left_depth', tl_d_img)
         self.utils.save_image(path + str(self.goal_cnt) + '/top_right_rgb.jpg', tr_rgb_img)
@@ -310,11 +345,13 @@ class trajectoryGenerator:
         self.utils.save_image(path + str(self.goal_cnt) + '/bottom_right_rgb.jpg', br_rgb_img)
         # self.utils.save_image(path + str(self.goal_cnt) + '/bottom_right_depth', br_d_img)
 
-        #save pose
+        #save pose and shelf data
         x = self.pose.pose.pose.position.x
         y = self.pose.pose.pose.position.y
         yaw = self.pose.pose.pose.orientation.z
-        self.utils.save_pose(path + str(self.goal_cnt) + '/pose.yaml',rospy.get_time(),x,y,yaw)
+        self.utils.save_metadata(path + str(self.goal_cnt) + '/pose.yaml',rospy.get_time(),x,y,yaw,query_area.id)
+
+
         rospy.logdebug("Saved waypoint number " + str(self.goal_cnt) + " images and pose.")
 
 

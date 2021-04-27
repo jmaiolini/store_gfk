@@ -132,8 +132,11 @@ class Utils:
         for shelf in self.shelfs:
             d_min = (shelf.z - CamerasParams.top_camera_height)/math.tan(CamerasParams.vfov/2)
             d_min_px = self.map2image(d_min,0)[0]
+             
+            eps = 0
+            d = d_min_px + eps #to have some margin eventually
    
-            repulsive_shelf = Shelf(shelf.id,shelf.x-d_min_px,shelf.y-d_min_px,shelf.z,shelf.w+2*d_min_px,shelf.h+2*d_min_px,shelf.dir) #basicallly enhancing the shelfs
+            repulsive_shelf = Shelf(shelf.id,shelf.x-d,shelf.y-d,shelf.z,shelf.w+2*d,shelf.h+2*d,shelf.dir) #basicallly enhancing the shelfs
             self.repulsive_areas.append(repulsive_shelf)
 
     def is_inside_a_repulsive_area(self,regions,pt):
@@ -172,9 +175,8 @@ class Utils:
         b = (goal[0],rep_area.y + rep_area.h)
         boundaries = [l,r,t,b]
  
-        #the capture position is too close wrt patch size
-        print(rep_area.z)
-        if rep_area.z < 2:
+        #the capture position is too close wrt patch size, we need to move to AT LEAST patch_sz
+        if rep_area.z < 2:#TODO change rep area to be at least patch_sz
             l2 = (rep_area.x - int(patch_sz/4),goal[1]) 
             r2 = (rep_area.x + rep_area.w + int(patch_sz/4),goal[1])
             t2 = (goal[0],rep_area.y- int(patch_sz/4))
@@ -505,10 +507,11 @@ class Utils:
     ## MISCELLANEOUS UTILS
     ##################################  
 
-    def save_pose(self,path,time,x,y,yaw):
+    def save_metadata(self,path,time,x,y,yaw,shelf_id):
         f = open(path, "w")
         f.write('# pose.yaml file')
         f.write('\n\n')
+        f.write('shelf_id: ' + str(shelf_id) + '\n')
         f.write('capture_time: ' + str(time) + '\n')
         f.write('x: ' + str(x) + '\n')
         f.write('y: ' + str(y) + '\n')

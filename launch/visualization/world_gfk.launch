@@ -2,7 +2,7 @@
 
 <launch>
   <arg name="world"  default="hasslochTextured"/> <!-- hasslochTextured has textures --> 
-  <arg name="gui" default="true"/> <!-- set to false to disable visualization -->
+  <arg name="gui" default="false"/> <!-- set to false to disable visualization -->
   <arg name="debug" default="false"/>
   <arg name="recording" default="false"/>
   <arg name="extra_gazebo_args" default=""/>
