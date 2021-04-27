@@ -54,7 +54,7 @@ class trajectoryGenerator:
         
         self.px_robot_radius = self.utils.meters2pixels(self.robot_radius,0)[0]
 
-        self.utils.calculate_repulsive_areas()
+        self.utils.calculate_repulsive_areas(self.patch_sz)
         self.repulsive_areas = self.utils.get_repulsive_areas()
 
         self.goal_cnt = 0
@@ -81,15 +81,15 @@ class trajectoryGenerator:
                 #since we have a query shelf for each desired position, we can associate a dictionary
                 #with key the goal counter (append 0,0 if query_area i s 0). This is TODO, for now we iterate
                 #over all of them (does not affect planner since offline)
-                if query_area != 0:
+                if query_area.x != 0:
                     shelfs_img = visual_tests.draw_arrow(shelfs_img,(i,j),query_area.center,(0,255,0))
                     
-                if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
-                    valid_waypoint = self.utils.push_waypoint((i,j),query_area,self.patch_sz)
-                    shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(255,0,0))
-                else:
-                    valid_waypoint = (i,j)
-                    shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
+                    if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
+                        valid_waypoint = self.utils.push_waypoint((i,j),query_area,self.patch_sz)
+                        shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(255,0,0))
+                    else:
+                        valid_waypoint = (i,j)
+                        shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
                
             self.utils.show_img_and_wait_key("Wpoints Inside Shelfs Checks", shelfs_img) 
 
@@ -136,31 +136,25 @@ class trajectoryGenerator:
         #get cameras info
         #TODO parametrize them into a .yaml file
         self.tl_cam_rgb_info = rospy.wait_for_message("/tl_rgbd_camera/rgb/camera_info", CameraInfo)
-        # self.tl_cam_d_info = rospy.wait_for_message("/tl_rgbd_camera/depth/camera_info", CameraInfo)
         self.tr_cam_rgb_info = rospy.wait_for_message("/tr_rgbd_camera/rgb/camera_info", CameraInfo)
-        # self.tr_cam_d_info = rospy.wait_for_message("/tr_rgbd_camera/depth/camera_info", CameraInfo)
+        self.ml_cam_rgb_info = rospy.wait_for_message("/ml_rgbd_camera/rgb/camera_info", CameraInfo)
+        self.mr_cam_rgb_info = rospy.wait_for_message("/mr_rgbd_camera/rgb/camera_info", CameraInfo)
         self.bl_cam_rgb_info = rospy.wait_for_message("/bl_rgbd_camera/rgb/camera_info", CameraInfo)
-        # self.bl_cam_d_info = rospy.wait_for_message("/bl_rgbd_camera/depth/camera_info", CameraInfo)
         self.br_cam_rgb_info = rospy.wait_for_message("/br_rgbd_camera/rgb/camera_info", CameraInfo)
-        # self.br_cam_d_info = rospy.wait_for_message("/br_rgbd_camera/depth/camera_info", CameraInfo)
     
         self.tl_rgb_img_sub = rospy.Subscriber("/tl_rgbd_camera/rgb/image_raw",Image, self.tl_rgb_img_cb)
-        # self.tl_d_img_sub = rospy.Subscriber("/tl_rgbd_camera/depth/image_raw",Image, self.tl_d_img_cb)
         self.tr_rgb_img_sub = rospy.Subscriber("/tr_rgbd_camera/rgb/image_raw",Image, self.tr_rgb_img_cb)
-        # self.tr_d_img_sub = rospy.Subscriber("/tr_rgbd_camera/depth/image_raw",Image, self.tr_d_img_cb)
+        self.ml_rgb_img_sub = rospy.Subscriber("/ml_rgbd_camera/rgb/image_raw",Image, self.ml_rgb_img_cb)
+        self.mr_rgb_img_sub = rospy.Subscriber("/mr_rgbd_camera/rgb/image_raw",Image, self.mr_rgb_img_cb)
         self.bl_rgb_img_sub = rospy.Subscriber("/bl_rgbd_camera/rgb/image_raw",Image, self.bl_rgb_img_cb)
-        # self.bl_d_img_sub = rospy.Subscriber("/bl_rgbd_camera/depth/image_raw",Image, self.bl_d_img_cb)
         self.br_rgb_img_sub = rospy.Subscriber("/br_rgbd_camera/rgb/image_raw",Image, self.br_rgb_img_cb)
-        # self.br_d_img_sub = rospy.Subscriber("/br_rgbd_camera/depth/image_raw",Image, self.br_d_img_cb)
 
         self.tl_rgb_img_msg = Image()
-        # self.tl_d_img_msg = Image()
         self.tr_rgb_img_msg = Image()
-        # self.tr_d_img_msg = Image()
+        self.ml_rgb_img_msg = Image()
+        self.mr_rgb_img_msg = Image()
         self.bl_rgb_img_msg = Image()
-        # self.bl_d_img_msg = Image()
         self.br_rgb_img_msg = Image()
-        # self.br_d_img_msg = Image()
 
         self.pose_sub = rospy.Subscriber("/robot_pose",PoseWithCovarianceStamped, self.pose_cb) #try gazebo ground truth eventually
         self.pose = PoseWithCovarianceStamped()
@@ -215,6 +209,8 @@ class trajectoryGenerator:
         ## NEW METHOD (repulsive areas)
         #######################
             
+        ###TODO ALL OFFLINE, THEN SEND ONLY GOOD WAYPOINTS!
+
         # for position in self.full_trajectory:
             # i,j = self.utils.map2image(position[0],position[1])
         i,j = self.utils.map2image(6.9 ,15.0)
@@ -224,25 +220,23 @@ class trajectoryGenerator:
         #since we have a query shelf for each desired position, we can associate a dictionary
         #with key the goal counter (append 0,0 if query_area i s 0). This is TODO, for now we iterate
         #over all of them (does not affect planner since offline)
-        if query_area != 0: #valid shelf/area found
+        if query_area.x != 0: #if the generated waypoint from CNN is in good we send it, otherwise we simply skip it
             valid_waypoint = (0,0)
             if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
                 valid_waypoint = self.utils.push_waypoint((i,j),query_area,self.patch_sz)
+                object_position = (i,j)
             else:
                 valid_waypoint = (i,j)
+                object_position = query_area.center
 
-            #if the generated waypoint from CNN is in good we send it, otherwise we skip it
-            if valid_waypoint != (0,0):
-                x, y = self.utils.image2map(valid_waypoint[0],valid_waypoint[1])
-                x, y = self.utils.shift_goal((x,y),self.map_shift)
+            x, y = self.utils.image2map(valid_waypoint[0],valid_waypoint[1])
+            x, y = self.utils.shift_goal((x,y),self.map_shift)
 
-                self.send_waypoint(x, y)
-                self.goal_cnt = self.goal_cnt + 1
-                    
-                time.sleep(1.0)
-                self.align()
-                time.sleep(1.0)
-                self.capture(query_area) 
+            self.send_waypoint(x, y)
+            self.goal_cnt = self.goal_cnt + 1
+
+            self.align_robot(object_position)
+            self.capture(query_area) 
   
         rospy.signal_shutdown("Reached last goal, shutting down wpoint generator node")
         rospy.logdebug("Reached last goal, shutting down wpoint generator node")
@@ -265,7 +259,7 @@ class trajectoryGenerator:
         else:
             return self.client.get_result()
 
-    def align(self):
+    def align_robot(self,object_position):
         rospy.logdebug("Aligning robot.")
         msg = Twist()
         msg.linear.x = 0
@@ -274,7 +268,13 @@ class trajectoryGenerator:
         msg.angular.x = 0
         msg.angular.y = 0
         #get pose and turning direction sign
+        curr_x = self.pose.pose.pose.position.x
+        curr_y = self.pose.pose.pose.position.y
         curr_yaw = self.pose.pose.pose.orientation.z
+
+        print("PROVA: ")
+        print(self.utils.calc_robot_obj_angle(curr_x,curr_y,curr_yaw,object_position))
+
         yaw_goal = 0
         dir_sign = 0
         if abs(curr_yaw) < abs(curr_yaw - self.utils.pi()):
@@ -292,62 +292,52 @@ class trajectoryGenerator:
             self.cmd_vel_pub.publish(msg)
             curr_yaw = self.pose.pose.pose.orientation.z
         
+        
+        
     def capture(self, query_area):
 
         path = self.base_path + 'acquisitions/' + self.store_name + '/' + str(self.num_trajectory) + '/'
         self.utils.dir_exists( path + str(self.goal_cnt) )
-        
+        capture_side = 0
+        #save images
+        # if capture_side == 'left':
         try:
             tl_rgb_img = self.bridge.imgmsg_to_cv2(self.tl_rgb_img_msg, "bgr8")
         except CvBridgeError as e:
             print(e)
-        # try:
-        #     tl_d_img = self.bridge.imgmsg_to_cv2(self.tl_d_img_msg, "mono16")
-        # except CvBridgeError as e:
-        #     print(e)
-
+        self.utils.save_image( path + str(self.goal_cnt) + '/top_rgb.jpg', tl_rgb_img)   
+        try:
+            ml_rgb_img = self.bridge.imgmsg_to_cv2(self.ml_rgb_img_msg, "bgr8")
+        except CvBridgeError as e:
+            print(e) 
+        self.utils.save_image( path + str(self.goal_cnt) + '/middle_rgb.jpg', ml_rgb_img)  
+        try:
+            bl_rgb_img = self.bridge.imgmsg_to_cv2(self.bl_rgb_img_msg, "bgr8")
+        except CvBridgeError as e:
+            print(e) 
+        self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', bl_rgb_img) 
+        # else:
         try:
             tr_rgb_img = self.bridge.imgmsg_to_cv2(self.tr_rgb_img_msg, "bgr8")
         except CvBridgeError as e:
             print(e)
-        # try:
-        #     tr_d_img = self.bridge.imgmsg_to_cv2(self.tr_d_img_msg, "mono16")
-        # except CvBridgeError as e:
-        #     print(e)
-
+        self.utils.save_image(path + str(self.goal_cnt) + '/top_rgb.jpg', tr_rgb_img)
         try:
-            bl_rgb_img = self.bridge.imgmsg_to_cv2(self.bl_rgb_img_msg, "bgr8")
+            mr_rgb_img = self.bridge.imgmsg_to_cv2(self.mr_rgb_img_msg, "bgr8")
         except CvBridgeError as e:
             print(e)
-        # try:
-        #     bl_d_img = self.bridge.imgmsg_to_cv2(self.bl_d_img_msg, "mono16")
-        # except CvBridgeError as e:
-        #     print(e)
-
+        self.utils.save_image(path + str(self.goal_cnt) + '/middle_rgb.jpg', mr_rgb_img)
         try:
             br_rgb_img = self.bridge.imgmsg_to_cv2(self.br_rgb_img_msg, "bgr8")
         except CvBridgeError as e:
             print(e)
-        # try:
-        #     br_d_img = self.bridge.imgmsg_to_cv2(self.br_d_img_msg, "mono16")
-        # except CvBridgeError as e:
-        #     print(e)
-
-        #save images
-        self.utils.save_image( path + str(self.goal_cnt) + '/top_left_rgb.jpg', tl_rgb_img)
-        # self.utils.save_image(path + str(self.goal_cnt) + '/top_left_depth', tl_d_img)
-        self.utils.save_image(path + str(self.goal_cnt) + '/top_right_rgb.jpg', tr_rgb_img)
-        # self.utils.save_image(path + str(self.goal_cnt) + '/top_right_depth', tr_d_img)
-        self.utils.save_image(path + str(self.goal_cnt) + '/bottom_left_rgb.jpg', bl_rgb_img)
-        # self.utils.save_image(path + str(self.goal_cnt) + '/bottom_left_depth', bl_d_img)
-        self.utils.save_image(path + str(self.goal_cnt) + '/bottom_right_rgb.jpg', br_rgb_img)
-        # self.utils.save_image(path + str(self.goal_cnt) + '/bottom_right_depth', br_d_img)
+        self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', br_rgb_img)
 
         #save pose and shelf data
         x = self.pose.pose.pose.position.x
         y = self.pose.pose.pose.position.y
         yaw = self.pose.pose.pose.orientation.z
-        self.utils.save_metadata(path + str(self.goal_cnt) + '/pose.yaml',rospy.get_time(),x,y,yaw,query_area.id)
+        self.utils.save_metadata(path + str(self.goal_cnt) + '/pose.yaml',rospy.get_time(),x,y,yaw,capture_side,query_area.id)
 
 
         rospy.logdebug("Saved waypoint number " + str(self.goal_cnt) + " images and pose.")
@@ -380,6 +370,18 @@ class trajectoryGenerator:
 
     def tr_d_img_cb(self, data):
         self.tr_d_img_msg = data
+
+    def ml_rgb_img_cb(self, data):
+        self.ml_rgb_img_msg = data
+
+    def ml_d_img_cb(self, data):
+        self.ml_d_img_msg = data
+
+    def mr_rgb_img_cb(self, data):
+        self.mr_rgb_img_msg = data
+
+    def mr_d_img_cb(self, data):
+        self.mr_d_img_msg = data
 
     def bl_rgb_img_cb(self, data):
         self.bl_rgb_img_msg = data

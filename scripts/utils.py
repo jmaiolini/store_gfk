@@ -127,11 +127,19 @@ class Utils:
             self.shelfs.append(img_shelf)
             
     #TODO in init
-    def calculate_repulsive_areas(self):
+    def calculate_repulsive_areas(self,patch_sz):
     
         for shelf in self.shelfs:
-            d_min = (shelf.z - CamerasParams.top_camera_height)/math.tan(CamerasParams.vfov/2)
+            d_min = 0
+            if shelf.z > CamerasParams.robot_height: #make sure we take the shelf top part
+                d_min = (shelf.z - CamerasParams.top_camera_height)/math.tan(CamerasParams.vfov/2)
+            else: #make sure we take the shelf bottom part
+                d_min = (CamerasParams.bottom_camera_height)/math.tan(CamerasParams.vfov/2)
+            
             d_min_px = self.map2image(d_min,0)[0]
+
+            if d_min_px < patch_sz:
+                d_min_px = patch_sz
              
             eps = 0
             d = d_min_px + eps #to have some margin eventually
@@ -148,20 +156,16 @@ class Utils:
     #since shelfs and repulsive areas share the same center and id, we get the query shelf by using the repulsive areas
     def find_query_shelf(self,goal):
         dist_to_shelf_center = 99999
-        query_shelf = 0
+        query_shelf = Shelf()
 
         for rep_area in self.repulsive_areas:
             dist = self.calc_eucl_dist(rep_area.center,goal)
             if  dist < dist_to_shelf_center:
                 query_shelf = rep_area
                 dist_to_shelf_center = dist
-
-        if query_shelf == 0:
-            print("Something went wrong when calculating query shelf")
-            sys.exit(-1)
         
         if dist_to_shelf_center > 150: #the generated wpoint is too far/wrong, thus not scanning
-            return 0
+            query_shelf = Shelf()
 
         return query_shelf
     
@@ -176,12 +180,12 @@ class Utils:
         boundaries = [l,r,t,b]
  
         #the capture position is too close wrt patch size, we need to move to AT LEAST patch_sz
-        if rep_area.z < 2:#TODO change rep area to be at least patch_sz
-            l2 = (rep_area.x - int(patch_sz/4),goal[1]) 
-            r2 = (rep_area.x + rep_area.w + int(patch_sz/4),goal[1])
-            t2 = (goal[0],rep_area.y- int(patch_sz/4))
-            b2 = (goal[0],rep_area.y + rep_area.h + int(patch_sz/4))
-            boundaries = [l2,r2,t2,b2]
+        # if rep_area.z < 2:#TODO change rep area to be at least patch_sz
+        #     l2 = (rep_area.x - int(patch_sz/4),goal[1]) 
+        #     r2 = (rep_area.x + rep_area.w + int(patch_sz/4),goal[1])
+        #     t2 = (goal[0],rep_area.y- int(patch_sz/4))
+        #     b2 = (goal[0],rep_area.y + rep_area.h + int(patch_sz/4))
+        #     boundaries = [l2,r2,t2,b2]
 
         dists = list()
         for boundary in boundaries:
@@ -191,7 +195,6 @@ class Utils:
 
         for idx in sorted_dists_idx:
             new_goal = boundaries[idx]
-            print("new goal now ", new_goal)
             patch = self.map_image[new_goal[1]-patch_sz/2:new_goal[1]+patch_sz/2,new_goal[0]-patch_sz/2:new_goal[0]+patch_sz/2]
             if(self.is_good_spot(patch)):
                 return new_goal
@@ -507,12 +510,13 @@ class Utils:
     ## MISCELLANEOUS UTILS
     ##################################  
 
-    def save_metadata(self,path,time,x,y,yaw,shelf_id):
+    def save_metadata(self,path,time,x,y,yaw,side,shelf_id):
         f = open(path, "w")
         f.write('# pose.yaml file')
         f.write('\n\n')
         f.write('shelf_id: ' + str(shelf_id) + '\n')
         f.write('capture_time: ' + str(time) + '\n')
+        f.write('capture_side: ' + str(side) + '\n')
         f.write('x: ' + str(x) + '\n')
         f.write('y: ' + str(y) + '\n')
         f.write('yaw: ' + str(yaw) )
@@ -529,6 +533,9 @@ class Utils:
 
     def calc_eucl_dist(self,p1,p2):
        return math.sqrt((p2[0] - p1[0])**2 + (p1[1] - p2[1])**2)
+    
+    def calc_robot_obj_angle(self,robot_x,robot_y,robot_yaw,obj_pos):
+        return math.atan2(obj_pos[1]-robot_y,obj_pos[0]-robot_x)-robot_yaw
 
     def pi(self):
         return math.pi

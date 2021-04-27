@@ -57,7 +57,7 @@
   <!-- bottom-right camera -->
   <xacro:property name="br_rgbd_x" value="0.0"/>
   <xacro:property name="br_rgbd_y" value="${-support_y/2}"/>
-  <xacro:property name="br_rgbd_z" value="${1/3*robot_height - base_height}"/>
+  <xacro:property name="br_rgbd_z" value="${1/3*robot_height - 2*base_height}"/>
   <xacro:property name="br_rgbd_R" value="0.0"/>
   <xacro:property name="br_rgbd_P" value="0.0"/><!-- 10.0-->
   <xacro:property name="br_rgbd_Y" value="-90.0"/>

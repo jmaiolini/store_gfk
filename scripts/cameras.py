@@ -15,4 +15,4 @@ class CamerasParams:
   robot_height = 1.8 
   top_camera_height = robot_height - base_height
   middle_camera_height = 2*robot_height/3 - base_height
-  bottom_camera_height = robot_height/3 - base_height
+  bottom_camera_height = robot_height/3 - 2*base_height
