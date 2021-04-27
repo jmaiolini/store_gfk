@@ -20,7 +20,7 @@
 <!-- from pal_navigation_cfg_public/pal_navigation_cfg_pmb2/config/base/common/local_costmap_public_sim.yaml-->
 <param name="robot_radius" value="0.275"/>
 
- <arg name="visual_check_wp_generator"   default="False"/> <!-- capital letter for python if True-->
+ <arg name="visual_check_wp_generator"   default="True"/> <!-- capital letter for python if True-->
 
 <group unless="$(arg visual_check_wp_generator)">
 

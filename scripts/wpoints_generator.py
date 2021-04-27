@@ -30,8 +30,6 @@ class trajectoryGenerator:
         elif args[4] == 'False' or args[4] == 'false':
             debug_mode = False
 
-        print(type(debug_mode))
-        print(debug_mode)
         rospack = rospkg.RosPack()
         self.base_path = rospack.get_path('store_gfk') + '/'
 

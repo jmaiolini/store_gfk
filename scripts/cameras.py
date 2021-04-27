@@ -13,5 +13,6 @@ class CamerasParams:
   vfov = 2*math.atan(math.tan(hfov/2)*h/w) #not available on ROS
   base_height = 0.195 #from pal model
   robot_height = 1.8 
-  top_camera_height = 2*robot_height/3 + base_height
-  bottom_camera_height = robot_height/3
+  top_camera_height = robot_height - base_height
+  middle_camera_height = 2*robot_height/3 - base_height
+  bottom_camera_height = robot_height/3 - base_height

@@ -62,7 +62,7 @@
           <image>
             <format>R8G8B8</format>
             <width>3840</width> <!-- 320 -->
-            <height>2160</height> <!-- 240 , 2160 stockbot, 2880 to have 4/3 aspect ratio-->
+            <height>2160</height> <!-- 240 , 2160 stockbot (16/9), 2880 to have 4/3 aspect ratio-->
           </image>
           <clip>
             <near>0.45</near>

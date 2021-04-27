@@ -15,36 +15,49 @@
   <xacro:property name="support_y"   value="0.15"/> <!-- support length on y-->
   <xacro:property name="support_z"   value="${robot_height-base_height}"/> <!-- support height-->
 
-  <!-- cameras config -->
-  <xacro:property name="n_cameras" value="four"/>
+
 <!--  <xacro:property name="camera_type" value="kinect"/> TODO.--> 
   <!-- top-left camera -->
   <xacro:property name="tl_rgbd_x" value="0.0"/>
   <xacro:property name="tl_rgbd_y" value="${support_y/2}"/>
-  <xacro:property name="tl_rgbd_z" value="${2/3*robot_height + base_height}"/>
+  <xacro:property name="tl_rgbd_z" value="${robot_height - base_height}"/>
   <xacro:property name="tl_rgbd_R" value="0.0"/> <!-- rotations are with respect world axis-->
   <xacro:property name="tl_rgbd_P" value="0.0"/><!-- -10.0-->
   <xacro:property name="tl_rgbd_Y" value="90.0"/>
   <!-- top-right camera -->
   <xacro:property name="tr_rgbd_x" value="0.0"/>
   <xacro:property name="tr_rgbd_y" value="${-support_y/2}"/>
-  <xacro:property name="tr_rgbd_z" value="${2/3*robot_height + base_height}"/>
+  <xacro:property name="tr_rgbd_z" value="${robot_height - base_height}"/>
   <xacro:property name="tr_rgbd_R" value="0.0"/>
   <xacro:property name="tr_rgbd_P" value="0.0"/><!-- -10.0-->
   <xacro:property name="tr_rgbd_Y" value="-90.0"/>
+
+  <!-- middle-left camera -->
+  <xacro:property name="ml_rgbd_x" value="0.0"/>
+  <xacro:property name="ml_rgbd_y" value="${support_y/2}"/>
+  <xacro:property name="ml_rgbd_z" value="${2/3*robot_height - base_height}"/>
+  <xacro:property name="ml_rgbd_R" value="0.0"/> <!-- rotations are with respect world axis-->
+  <xacro:property name="ml_rgbd_P" value="0.0"/><!-- -10.0-->
+  <xacro:property name="ml_rgbd_Y" value="90.0"/>
+  <!-- middle-right camera -->
+  <xacro:property name="mr_rgbd_x" value="0.0"/>
+  <xacro:property name="mr_rgbd_y" value="${-support_y/2}"/>
+  <xacro:property name="mr_rgbd_z" value="${2/3*robot_height - base_height}"/>
+  <xacro:property name="mr_rgbd_R" value="0.0"/>
+  <xacro:property name="mr_rgbd_P" value="0.0"/><!-- -10.0-->
+  <xacro:property name="mr_rgbd_Y" value="-90.0"/>
 	
-  <!-- next not used if two cameras only -->
   <!-- bottom-left camera -->
   <xacro:property name="bl_rgbd_x" value="0.0"/>
   <xacro:property name="bl_rgbd_y" value="${support_y/2}"/>
-  <xacro:property name="bl_rgbd_z" value="${1/3*robot_height}"/>
+  <xacro:property name="bl_rgbd_z" value="${1/3*robot_height - base_height}"/>
   <xacro:property name="bl_rgbd_R" value="0.0"/> 
   <xacro:property name="bl_rgbd_P" value="0.0"/><!-- 10.0-->
   <xacro:property name="bl_rgbd_Y" value="90.0"/>
   <!-- bottom-right camera -->
   <xacro:property name="br_rgbd_x" value="0.0"/>
   <xacro:property name="br_rgbd_y" value="${-support_y/2}"/>
-  <xacro:property name="br_rgbd_z" value="${1/3*robot_height}"/>
+  <xacro:property name="br_rgbd_z" value="${1/3*robot_height - base_height}"/>
   <xacro:property name="br_rgbd_R" value="0.0"/>
   <xacro:property name="br_rgbd_P" value="0.0"/><!-- 10.0-->
   <xacro:property name="br_rgbd_Y" value="-90.0"/>
@@ -73,37 +86,6 @@
   <xacro:property name="rgb_P" value="15.0"/>
   <xacro:property name="rgb_Y" value="0.0   "/>
 
-<xacro:if value="${n_cameras == 'two'}">
-
-  <!-- RGBD base -->
-  <xacro:rgbd_camera name="base_rgbd_camera" parent="base">
-    <!-- Pose of sensor frame wrt to base -->
-    <origin 
-      xyz="${base_rgbd_x} ${base_rgbd_y} ${base_rgbd_z}" 
-	  rpy="0 0 0" />
-<!--      rpy="${base_rgbd_R * deg_to_rad} ${base_rgbd_P * deg_to_rad} ${base_rgbd_Y * deg_to_rad}"/> -->
-    <!-- Pose of optical frame wrt to sensor -->
-    <origin 
-      xyz="0 0 0" 
-      rpy="${-90 * deg_to_rad} 0 ${-90 * deg_to_rad}"/>
-  </xacro:rgbd_camera>
-
-  <!-- RGBD roof -->
-  <xacro:rgbd_camera name="roof_rgbd_camera" parent="base">
-    <!-- Pose of sensor frame wrt to base -->
-    <origin 
-      xyz="${roof_rgbd_x} ${roof_rgbd_y} ${roof_rgbd_z}" 
-      rpy="0 0 0" />
-<!--      rpy="${roof_rgbd_R * deg_to_rad} ${roof_rgbd_P * deg_to_rad} ${roof_rgbd_Y * deg_to_rad}"/>-->
-    <!-- Pose of optical frame wrt to sensor -->
-    <origin 
-      xyz="0 0 0" 
-      rpy="${-90 * deg_to_rad} 0 ${-90 * deg_to_rad}"/>
-  </xacro:rgbd_camera>
-
-</xacro:if>
-
-<xacro:if value="${n_cameras == 'four'}">
 
   <!-- top-left RGBD -->
   <xacro:rgbd_camera name="tl_rgbd_camera" parent="base">
@@ -127,6 +109,31 @@
     <origin 
       xyz="0 0 0" 
       rpy="${-90 * deg_to_rad} 0 ${-90 * deg_to_rad}"/>
+  </xacro:rgbd_camera>
+
+<!-- middle-left RGBD -->
+  <xacro:rgbd_camera name="ml_rgbd_camera" parent="base">
+    <!-- Pose of sensor frame wrt to base -->
+    <origin 
+      xyz="${ml_rgbd_x} ${ml_rgbd_y} ${ml_rgbd_z}" 
+	  rpy="${ml_rgbd_R * deg_to_rad} ${ml_rgbd_P * deg_to_rad} ${ml_rgbd_Y * deg_to_rad}" />
+    <!-- Pose of optical frame wrt to sensor -->
+    <origin 
+      xyz="0 0 0" 
+      rpy="${-90 * deg_to_rad} 0 ${-90 * deg_to_rad}"/>
+  </xacro:rgbd_camera>
+
+  <!-- middle-right RGBD -->
+  <xacro:rgbd_camera name="mr_rgbd_camera" parent="base">
+    <!-- Pose of sensor frame wrt to base -->
+    <origin 
+      xyz="${mr_rgbd_x} ${mr_rgbd_y} ${mr_rgbd_z}" 
+  	  rpy="${mr_rgbd_R * deg_to_rad} ${mr_rgbd_P * deg_to_rad} ${mr_rgbd_Y * deg_to_rad}" />
+    <!-- Pose of optical frame wrt to sensor -->
+    <origin 
+      xyz="0 0 0" 
+      rpy="${-90 * deg_to_rad} 0 ${-90 * deg_to_rad}"/>
+
   </xacro:rgbd_camera>
   <!-- bottom-left RGBD -->
   <xacro:rgbd_camera name="bl_rgbd_camera" parent="base">
@@ -152,7 +159,6 @@
       rpy="${-90 * deg_to_rad} 0 ${-90 * deg_to_rad}"/>
   </xacro:rgbd_camera>
 
-</xacro:if>
 
   <!-- RGB -->
 <!--  <xacro:elp_rgb name="rgb_camera" parent="base">-->
