@@ -82,15 +82,20 @@ class trajectoryGenerator:
                 #with key the goal counter (append 0,0 if query_area i s 0). This is TODO, for now we iterate
                 #over all of them (does not affect planner since offline)
                 if query_area.x != 0:
-                    shelfs_img = visual_tests.draw_arrow(shelfs_img,(i,j),query_area.center,(0,255,0))
+                    # shelfs_img = visual_tests.draw_arrow(shelfs_img,(i,j),query_area.center,(0,255,0))
                     
                     if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
                         valid_waypoint = self.utils.push_waypoint((i,j),query_area,self.patch_sz)
-                        shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(255,0,0))
+                        object_position = (i,j)
+                        shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
+                        shelfs_img = visual_tests.draw_point(shelfs_img,object_position,(255,0,0))
                     else:
                         valid_waypoint = (i,j)
+                        object_position = query_area.center
                         shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
+                        shelfs_img = visual_tests.draw_point(shelfs_img,object_position,(255,0,0))
                
+                    shelfs_img = visual_tests.draw_arrow(shelfs_img,valid_waypoint,object_position,(0,0,255))
             self.utils.show_img_and_wait_key("Wpoints Inside Shelfs Checks", shelfs_img) 
 
             self.utils.save_image(self.base_path + '/shelfs_check.jpg', shelfs_img)
@@ -161,7 +166,7 @@ class trajectoryGenerator:
         self.laser_scan_sub = rospy.Subscriber("/scan",LaserScan, self.laser_cb)
         self.laser_msg = LaserScan()
 
-        self.cmd_vel_pub = rospy.Publisher("/mobile_base_controller/cmd_vel",Twist, queue_size=10)
+        self.cmd_vel_pub = rospy.Publisher("/mobile_base_controller/cmd_vel",Twist, queue_size=1)
 
         #action for move_base
         self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
@@ -214,8 +219,8 @@ class trajectoryGenerator:
         # for position in self.full_trajectory:
             # i,j = self.utils.map2image(position[0],position[1])
         i,j = self.utils.map2image(6.9 ,15.0)
-        img = visual_tests.draw_point(img,(i,j),(0,0,255),5)
-        self.utils.show_img_and_wait_key("abba",img)
+       
+        
         query_area = self.utils.find_query_shelf((i,j)) #getting rep area, not shelf
         #since we have a query shelf for each desired position, we can associate a dictionary
         #with key the goal counter (append 0,0 if query_area i s 0). This is TODO, for now we iterate
@@ -231,12 +236,26 @@ class trajectoryGenerator:
 
             x, y = self.utils.image2map(valid_waypoint[0],valid_waypoint[1])
             x, y = self.utils.shift_goal((x,y),self.map_shift)
+            object_position = self.utils.image2map(object_position[0],object_position[1])
+            object_position = self.utils.shift_goal(object_position,self.map_shift)
+
+            robot_angles = [45,135, -135,-45]
+            robot_position = (0,0)
+            obj_positions = [(2,0),(0,2),(-2,0),(0,-2)]
+
+            for robot_angle in robot_angles:
+                for obj_position in obj_positions:
+                    print("Result of atan2 of robot_angle: ", robot_angle, " and obj_position: ", obj_position, " is: ")
+                    angle = Utils.rad2deg(Utils.get_robot_obj_angle(0,0,Utils.deg2rad(robot_angle),obj_position))
+                    if abs(angle) > 180:
+                        angle = Utils.wrap_deg_yaw(angle)
+                    print(angle)
 
             self.send_waypoint(x, y)
             self.goal_cnt = self.goal_cnt + 1
 
-            self.align_robot(object_position)
-            self.capture(query_area) 
+            capture_side = self.align_robot(object_position)
+            self.capture(capture_side, query_area) 
   
         rospy.signal_shutdown("Reached last goal, shutting down wpoint generator node")
         rospy.logdebug("Reached last goal, shutting down wpoint generator node")
@@ -272,33 +291,59 @@ class trajectoryGenerator:
         curr_y = self.pose.pose.pose.position.y
         curr_yaw = self.pose.pose.pose.orientation.z
 
-        print("PROVA: ")
-        print(self.utils.calc_robot_obj_angle(curr_x,curr_y,curr_yaw,object_position))
-
-        yaw_goal = 0
-        dir_sign = 0
-        if abs(curr_yaw) < abs(curr_yaw - self.utils.pi()):
-           yaw_goal = 0
-           dir_sign = -1 if curr_yaw > 0 else 1
-        else:
-            yaw_goal = self.utils.pi()
-            dir_sign = -1 if curr_yaw < 0 else 1
-
         epsilon = 0.02 #around 1 degree
 
-        msg.angular.z = dir_sign*0.2 #moving very slowly
-            
-        while not rospy.is_shutdown() and abs(self.pose.pose.pose.orientation.z - yaw_goal) > epsilon:
+        #theta is used only to get the turning direction and the best angle to stop the robot to scan
+        #does not work as controller on the angle due to odometry errors
+        theta = Utils.get_robot_obj_angle(curr_x,curr_y,curr_yaw,object_position)
+        print("curr_x,curr_y: ",curr_x,curr_y)
+        print("object_position: ", object_position)
+        print("ANGLE AT THE BEGINNING: ", Utils.rad2deg(theta))
+        w_direction = 1 if abs(theta) >= Utils.pi()/2 else -1
+
+        msg.angular.z = w_direction*0.2 #moving very slowly
+
+        while not rospy.is_shutdown() and  abs(abs(theta) - Utils.pi()/2) > epsilon:
             self.cmd_vel_pub.publish(msg)
             curr_yaw = self.pose.pose.pose.orientation.z
+            theta = Utils.get_robot_obj_angle(curr_x,curr_y,curr_yaw,object_position)
+            
+            
+        print("curr_yaw AT THE END : ", Utils.rad2deg(curr_yaw))
+
+        print("diff AT THE END : ", Utils.rad2deg(theta) - Utils.rad2deg(curr_yaw))
+            
+        
+        print("ANGLE AT THE END: ", Utils.rad2deg(theta))
+
+        capture_side = "left" if w_direction == -1 else "right"
+
+        print("SO SIDE IS: ", capture_side)
+
+        # yaw_goal = 0
+        # dir_sign = 0
+        # if abs(curr_yaw) < abs(curr_yaw - self.utils.pi()):
+        #    yaw_goal = 0
+        #    dir_sign = -1 if curr_yaw > 0 else 1
+        # else:
+        #     yaw_goal = self.utils.pi()
+        #     dir_sign = -1 if curr_yaw < 0 else 1
+
+        # epsilon = 0.02 #around 1 degree
+
+        # msg.angular.z = dir_sign*0.2 #moving very slowly
+            
+        # while not rospy.is_shutdown() and abs(self.pose.pose.pose.orientation.z - yaw_goal) > epsilon:
+        #     self.cmd_vel_pub.publish(msg)
+        #     curr_yaw = self.pose.pose.pose.orientation.z
         
         
         
-    def capture(self, query_area):
+    def capture(self, capture_side, query_area):
 
         path = self.base_path + 'acquisitions/' + self.store_name + '/' + str(self.num_trajectory) + '/'
         self.utils.dir_exists( path + str(self.goal_cnt) )
-        capture_side = 0
+        
         #save images
         # if capture_side == 'left':
         try:
@@ -317,21 +362,21 @@ class trajectoryGenerator:
             print(e) 
         self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', bl_rgb_img) 
         # else:
-        try:
-            tr_rgb_img = self.bridge.imgmsg_to_cv2(self.tr_rgb_img_msg, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-        self.utils.save_image(path + str(self.goal_cnt) + '/top_rgb.jpg', tr_rgb_img)
-        try:
-            mr_rgb_img = self.bridge.imgmsg_to_cv2(self.mr_rgb_img_msg, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-        self.utils.save_image(path + str(self.goal_cnt) + '/middle_rgb.jpg', mr_rgb_img)
-        try:
-            br_rgb_img = self.bridge.imgmsg_to_cv2(self.br_rgb_img_msg, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-        self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', br_rgb_img)
+        # try:
+        #     tr_rgb_img = self.bridge.imgmsg_to_cv2(self.tr_rgb_img_msg, "bgr8")
+        # except CvBridgeError as e:
+        #     print(e)
+        # self.utils.save_image(path + str(self.goal_cnt) + '/top_rgb.jpg', tr_rgb_img)
+        # try:
+        #     mr_rgb_img = self.bridge.imgmsg_to_cv2(self.mr_rgb_img_msg, "bgr8")
+        # except CvBridgeError as e:
+        #     print(e)
+        # self.utils.save_image(path + str(self.goal_cnt) + '/middle_rgb.jpg', mr_rgb_img)
+        # try:
+        #     br_rgb_img = self.bridge.imgmsg_to_cv2(self.br_rgb_img_msg, "bgr8")
+        # except CvBridgeError as e:
+        #     print(e)
+        # self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', br_rgb_img)
 
         #save pose and shelf data
         x = self.pose.pose.pose.position.x

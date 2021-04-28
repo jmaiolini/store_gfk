@@ -530,14 +530,26 @@ class Utils:
 
     def create_dir(self,path):
         return os.makedirs(path)
+    @staticmethod
+    def deg2rad(angle_deg):
+        return math.radians(angle_deg)
+    @staticmethod
+    def rad2deg(angle_rad):
+        return math.degrees(angle_rad)
+    @staticmethod
+    def wrap_deg_yaw(theta): 
+        return theta - 360 if theta > 0 else theta + 360
+    @staticmethod
+    def wrap_rad_yaw(theta): 
+        return theta - 2*self.pi()  if theta > 0 else theta + 2*self.pi()
 
     def calc_eucl_dist(self,p1,p2):
        return math.sqrt((p2[0] - p1[0])**2 + (p1[1] - p2[1])**2)
-    
-    def calc_robot_obj_angle(self,robot_x,robot_y,robot_yaw,obj_pos):
+    @staticmethod
+    def get_robot_obj_angle(robot_x,robot_y,robot_yaw,obj_pos):
         return math.atan2(obj_pos[1]-robot_y,obj_pos[0]-robot_x)-robot_yaw
-
-    def pi(self):
+    @staticmethod
+    def pi():
         return math.pi
 
 
