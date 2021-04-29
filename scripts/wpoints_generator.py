@@ -2,6 +2,7 @@
 
 import rospy
 import rospkg
+import tf
 import sys
 import argparse
 import actionlib
@@ -11,6 +12,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionFeedb
 from geometry_msgs.msg import PoseStamped, Twist, PoseWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid
 from sensor_msgs.msg import LaserScan, Image, CameraInfo
+import message_filters
 from utils import Utils
 import visual_tests
 from cameras import CamerasParams
@@ -147,12 +149,25 @@ class trajectoryGenerator:
         self.bl_cam_rgb_info = rospy.wait_for_message("/bl_rgbd_camera/rgb/camera_info", CameraInfo)
         self.br_cam_rgb_info = rospy.wait_for_message("/br_rgbd_camera/rgb/camera_info", CameraInfo)
     
-        self.tl_rgb_img_sub = rospy.Subscriber("/tl_rgbd_camera/rgb/image_raw",Image, self.tl_rgb_img_cb)
-        self.tr_rgb_img_sub = rospy.Subscriber("/tr_rgbd_camera/rgb/image_raw",Image, self.tr_rgb_img_cb)
-        self.ml_rgb_img_sub = rospy.Subscriber("/ml_rgbd_camera/rgb/image_raw",Image, self.ml_rgb_img_cb)
-        self.mr_rgb_img_sub = rospy.Subscriber("/mr_rgbd_camera/rgb/image_raw",Image, self.mr_rgb_img_cb)
-        self.bl_rgb_img_sub = rospy.Subscriber("/bl_rgbd_camera/rgb/image_raw",Image, self.bl_rgb_img_cb)
-        self.br_rgb_img_sub = rospy.Subscriber("/br_rgbd_camera/rgb/image_raw",Image, self.br_rgb_img_cb)
+        # self.tl_rgb_img_sub = rospy.Subscriber("/tl_rgbd_camera/rgb/image_raw",Image, self.tl_rgb_img_cb)
+        # self.tr_rgb_img_sub = rospy.Subscriber("/tr_rgbd_camera/rgb/image_raw",Image, self.tr_rgb_img_cb)
+        # self.ml_rgb_img_sub = rospy.Subscriber("/ml_rgbd_camera/rgb/image_raw",Image, self.ml_rgb_img_cb)
+        # self.mr_rgb_img_sub = rospy.Subscriber("/mr_rgbd_camera/rgb/image_raw",Image, self.mr_rgb_img_cb)
+        # self.bl_rgb_img_sub = rospy.Subscriber("/bl_rgbd_camera/rgb/image_raw",Image, self.bl_rgb_img_cb)
+        # self.br_rgb_img_sub = rospy.Subscriber("/br_rgbd_camera/rgb/image_raw",Image, self.br_rgb_img_cb)
+
+        #synchronize cameras image by message_filters 
+        self.tl_rgb_img_sub = message_filters.Subscriber("/tl_rgbd_camera/rgb/image_raw",Image)
+        self.tr_rgb_img_sub = message_filters.Subscriber("/tr_rgbd_camera/rgb/image_raw",Image)
+        self.ml_rgb_img_sub = message_filters.Subscriber("/ml_rgbd_camera/rgb/image_raw",Image)
+        self.mr_rgb_img_sub = message_filters.Subscriber("/mr_rgbd_camera/rgb/image_raw",Image)
+        self.bl_rgb_img_sub = message_filters.Subscriber("/bl_rgbd_camera/rgb/image_raw",Image)
+        self.br_rgb_img_sub = message_filters.Subscriber("/br_rgbd_camera/rgb/image_raw",Image)
+
+        self.ts_left_cameras = message_filters.TimeSynchronizer([self.tl_rgb_img_sub, self.ml_rgb_img_sub, self.bl_rgb_img_sub], 10)
+        self.ts_left_cameras.registerCallback(self.left_cameras_cb)
+        self.ts_right_cameras = message_filters.TimeSynchronizer([self.tr_rgb_img_sub, self.mr_rgb_img_sub, self.br_rgb_img_sub], 10)
+        self.ts_right_cameras.registerCallback(self.right_cameras_cb)
 
         self.tl_rgb_img_msg = Image()
         self.tr_rgb_img_msg = Image()
@@ -160,6 +175,9 @@ class trajectoryGenerator:
         self.mr_rgb_img_msg = Image()
         self.bl_rgb_img_msg = Image()
         self.br_rgb_img_msg = Image()
+
+        self.left_capture_time = 0
+        self.right_capture_time = 0
 
         self.pose_sub = rospy.Subscriber("/robot_pose",PoseWithCovarianceStamped, self.pose_cb) #try gazebo ground truth eventually
         self.pose = PoseWithCovarianceStamped()
@@ -239,18 +257,6 @@ class trajectoryGenerator:
             object_position = self.utils.image2map(object_position[0],object_position[1])
             object_position = self.utils.shift_goal(object_position,self.map_shift)
 
-            robot_angles = [45,135, -135,-45]
-            robot_position = (0,0)
-            obj_positions = [(2,0),(0,2),(-2,0),(0,-2)]
-
-            for robot_angle in robot_angles:
-                for obj_position in obj_positions:
-                    print("Result of atan2 of robot_angle: ", robot_angle, " and obj_position: ", obj_position, " is: ")
-                    angle = Utils.rad2deg(Utils.get_robot_obj_angle(0,0,Utils.deg2rad(robot_angle),obj_position))
-                    if abs(angle) > 180:
-                        angle = Utils.wrap_deg_yaw(angle)
-                    print(angle)
-
             self.send_waypoint(x, y)
             self.goal_cnt = self.goal_cnt + 1
 
@@ -293,8 +299,6 @@ class trajectoryGenerator:
 
         epsilon = 0.02 #around 1 degree
 
-        #theta is used only to get the turning direction and the best angle to stop the robot to scan
-        #does not work as controller on the angle due to odometry errors
         theta = Utils.get_robot_obj_angle(curr_x,curr_y,curr_yaw,object_position)
         print("curr_x,curr_y: ",curr_x,curr_y)
         print("object_position: ", object_position)
@@ -318,7 +322,7 @@ class trajectoryGenerator:
 
         capture_side = "left" if w_direction == -1 else "right"
 
-        print("SO SIDE IS: ", capture_side)
+        return capture_side
 
         # yaw_goal = 0
         # dir_sign = 0
@@ -343,48 +347,46 @@ class trajectoryGenerator:
 
         path = self.base_path + 'acquisitions/' + self.store_name + '/' + str(self.num_trajectory) + '/'
         self.utils.dir_exists( path + str(self.goal_cnt) )
+
+        capture_time = 0
+        top_cam_info = 0
+        middle_cam_info = 0
+        bottom_cam_info = 0
         
         #save images
-        # if capture_side == 'left':
-        try:
-            tl_rgb_img = self.bridge.imgmsg_to_cv2(self.tl_rgb_img_msg, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-        self.utils.save_image( path + str(self.goal_cnt) + '/top_rgb.jpg', tl_rgb_img)   
-        try:
-            ml_rgb_img = self.bridge.imgmsg_to_cv2(self.ml_rgb_img_msg, "bgr8")
-        except CvBridgeError as e:
-            print(e) 
-        self.utils.save_image( path + str(self.goal_cnt) + '/middle_rgb.jpg', ml_rgb_img)  
-        try:
-            bl_rgb_img = self.bridge.imgmsg_to_cv2(self.bl_rgb_img_msg, "bgr8")
-        except CvBridgeError as e:
-            print(e) 
-        self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', bl_rgb_img) 
-        # else:
-        # try:
-        #     tr_rgb_img = self.bridge.imgmsg_to_cv2(self.tr_rgb_img_msg, "bgr8")
-        # except CvBridgeError as e:
-        #     print(e)
-        # self.utils.save_image(path + str(self.goal_cnt) + '/top_rgb.jpg', tr_rgb_img)
-        # try:
-        #     mr_rgb_img = self.bridge.imgmsg_to_cv2(self.mr_rgb_img_msg, "bgr8")
-        # except CvBridgeError as e:
-        #     print(e)
-        # self.utils.save_image(path + str(self.goal_cnt) + '/middle_rgb.jpg', mr_rgb_img)
-        # try:
-        #     br_rgb_img = self.bridge.imgmsg_to_cv2(self.br_rgb_img_msg, "bgr8")
-        # except CvBridgeError as e:
-        #     print(e)
-        # self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', br_rgb_img)
+        if capture_side == "left":
+            capture_time = self.left_capture_time
+            self.utils.save_image( path + str(self.goal_cnt) + '/top_rgb.jpg', self.tl_rgb_img)   
+            self.utils.save_image( path + str(self.goal_cnt) + '/middle_rgb.jpg', self.ml_rgb_img)  
+            self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', self.bl_rgb_img) 
+            top_cam_info = self.tl_cam_rgb_info
+            middle_cam_info = self.ml_cam_rgb_info
+            bottom_cam_info = self.bl_cam_rgb_info
+
+        if capture_side == "right":
+            capture_time = self.right_capture_time
+            self.utils.save_image( path + str(self.goal_cnt) + '/top_rgb.jpg', self.tr_rgb_img)   
+            self.utils.save_image( path + str(self.goal_cnt) + '/middle_rgb.jpg', self.mr_rgb_img)  
+            self.utils.save_image(path + str(self.goal_cnt) + '/bottom_rgb.jpg', self.br_rgb_img) 
+            top_cam_info = self.tr_cam_rgb_info
+            middle_cam_info = self.mr_cam_rgb_info
+            bottom_cam_info = self.br_cam_rgb_info
+
+
 
         #save pose and shelf data
         x = self.pose.pose.pose.position.x
         y = self.pose.pose.pose.position.y
         yaw = self.pose.pose.pose.orientation.z
-        self.utils.save_metadata(path + str(self.goal_cnt) + '/pose.yaml',rospy.get_time(),x,y,yaw,capture_side,query_area.id)
-
-
+        x,y = self.utils.shift_goal((x,y),self.map_shift,-1) #restore goal position wrt map origin
+        self.utils.save_pose_metadata(path + str(self.goal_cnt) + '/pose.yaml',capture_time,x,y,yaw,capture_side,query_area.id)
+        self.utils.save_camera_metadata(path + str(self.goal_cnt) + '/top_camera.yaml',capture_time,top_cam_info)
+        self.utils.save_camera_metadata(path + str(self.goal_cnt) + '/middle_camera.yaml',capture_time,middle_cam_info)
+        self.utils.save_camera_metadata(path + str(self.goal_cnt) + '/bottom_camera.yaml',capture_time,bottom_cam_info)
+        print("TIME>", rospy.get_time())
+        print("TOP>", self.tl_rgb_img_msg.header.stamp.to_time())
+        print("MIDDLE>", self.ml_rgb_img_msg.header.stamp.to_time())
+        print("BOT>", self.bl_rgb_img_msg.header.stamp.to_time())
         rospy.logdebug("Saved waypoint number " + str(self.goal_cnt) + " images and pose.")
 
 
@@ -404,42 +406,63 @@ class trajectoryGenerator:
     def pose_cb(self,data):
         self.pose = data
     
-    def tl_rgb_img_cb(self, data):
-        self.tl_rgb_img_msg = data
+    # def tl_rgb_img_cb(self, data):
+    #     self.tl_rgb_img_msg = data
 
-    def tl_d_img_cb(self, data):
-        self.tl_d_img_msg = data
+    # def tr_rgb_img_cb(self, data):
+    #     self.tr_rgb_img_msg = data
 
-    def tr_rgb_img_cb(self, data):
-        self.tr_rgb_img_msg = data
+    # def ml_rgb_img_cb(self, data):
+    #     self.ml_rgb_img_msg = data
 
-    def tr_d_img_cb(self, data):
-        self.tr_d_img_msg = data
+    # def mr_rgb_img_cb(self, data):
+    #     self.mr_rgb_img_msg = data
 
-    def ml_rgb_img_cb(self, data):
-        self.ml_rgb_img_msg = data
+    # def bl_rgb_img_cb(self, data):
+    #     self.bl_rgb_img_msg = data
 
-    def ml_d_img_cb(self, data):
-        self.ml_d_img_msg = data
+    # def br_rgb_img_cb(self, data):
+    #     self.br_rgb_img_msg = data
 
-    def mr_rgb_img_cb(self, data):
-        self.mr_rgb_img_msg = data
 
-    def mr_d_img_cb(self, data):
-        self.mr_d_img_msg = data
+    def right_cameras_cb(self, top_img, middle_img, bottom_img):
 
-    def bl_rgb_img_cb(self, data):
-        self.bl_rgb_img_msg = data
+        self.right_capture_time = top_img.header.stamp
 
-    def bl_d_img_cb(self, data):
-        self.bl_d_img_msg = data
+        try:
+            self.tr_rgb_img = self.bridge.imgmsg_to_cv2(top_img, "bgr8")
+        except CvBridgeError as e:
+            print(e)
 
-    def br_rgb_img_cb(self, data):
-        self.br_rgb_img_msg = data
+        try:
+            self.mr_rgb_img = self.bridge.imgmsg_to_cv2(middle_img, "bgr8")
+        except CvBridgeError as e:
+            print(e)
 
-    def br_d_img_cb(self, data):
-        self.br_d_img_msg = data
+        try:
+            self.br_rgb_img = self.bridge.imgmsg_to_cv2(bottom_img, "bgr8")
+        except CvBridgeError as e:
+            print(e)
 
+
+    def left_cameras_cb(self, top_img, middle_img, bottom_img): 
+
+        self.left_capture_time = top_img.header.stamp
+
+        try:
+            self.tl_rgb_img = self.bridge.imgmsg_to_cv2(top_img, "bgr8")
+        except CvBridgeError as e:
+            print(e)
+
+        try:
+            self.ml_rgb_img = self.bridge.imgmsg_to_cv2(middle_img, "bgr8")
+        except CvBridgeError as e:
+            print(e) 
+     
+        try:
+            self.bl_rgb_img = self.bridge.imgmsg_to_cv2(bottom_img, "bgr8")
+        except CvBridgeError as e:
+            print(e) 
 
 def main():
     

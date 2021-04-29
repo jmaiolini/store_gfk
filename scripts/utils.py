@@ -302,10 +302,9 @@ class Utils:
        
         return x,y
 
-    def shift_goal(self,waypoint,map_shift):
+    def shift_goal(self,waypoint,map_shift,sign=1):
         x,y,Y = map_shift.split() 
-        corr_pose = (waypoint[0]+float(x), waypoint[1]+float(y))
-
+        corr_pose = (waypoint[0]+sign*float(x), waypoint[1]+sign*float(y))
         return corr_pose
 
     ##################################
@@ -510,16 +509,28 @@ class Utils:
     ## MISCELLANEOUS UTILS
     ##################################  
 
-    def save_metadata(self,path,time,x,y,yaw,side,shelf_id):
+    def save_pose_metadata(self,path,time,x,y,yaw,side,shelf_id):
         f = open(path, "w")
         f.write('# pose.yaml file')
         f.write('\n\n')
         f.write('shelf_id: ' + str(shelf_id) + '\n')
         f.write('capture_time: ' + str(time) + '\n')
         f.write('capture_side: ' + str(side) + '\n')
-        f.write('x: ' + str(x) + '\n')
-        f.write('y: ' + str(y) + '\n')
-        f.write('yaw: ' + str(yaw) )
+        f.write('x_robot: ' + str(x) + '\n')
+        f.write('y_robot: ' + str(y) + '\n')
+        f.write('yaw_robot: ' + str(yaw) )
+        f.close()
+
+    def save_camera_metadata(self,path,time,cam_info):
+        f = open(path, "w")
+        f.write('# cameras.yaml file')
+        f.write('\n\n')
+        f.write('capture_time: ' + str(time) + '\n')
+        f.write('height: ' + str(cam_info.height) + '\n')
+        f.write('width: ' + str(cam_info.width) + '\n')
+        f.write('distorton coefficients: ' + str(cam_info.D) + '\n')
+        f.write('camera matrix: ' + str(cam_info.K) + '\n')
+        f.write('rectification matrix: ' + str(cam_info.R) + '\n') #only for stereo, so not used
         f.close()
 
     def dir_exists(self,path):
