@@ -2,12 +2,11 @@
 
 <launch>
   <!-- enable visualizations -->
-  <arg name="rviz_enabled" default="true"/>
-<!--  <arg name="gui" value="false"/> -->
+  <arg name="rviz_enabled" default="false"/>
 
   <!-- robot args -->
   <arg name="laser_model"  default="sick-571"/>
-  <arg name="rgbd_sensors"  default="false"/>
+  <arg name="rgbd_sensors"  default="true"/>
   <arg name="gzpose" default="-x 5.0 -y 5.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0"/>
   <arg name="public_sim" default="false"/>
   <arg name="simple_sim_model" default="false"/>
@@ -21,7 +20,6 @@
       <arg name="laser_model" value="$(arg laser_model)"/>
       <arg name="rgbd_sensors" value="$(arg rgbd_sensors)"/>
       <arg name="gzpose" value="$(arg gzpose)"/>
-<!--      <arg name="gui" value="$(arg gui)"/> -->
     </include>
   </group>
 

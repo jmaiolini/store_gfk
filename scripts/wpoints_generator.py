@@ -72,10 +72,12 @@ class trajectoryGenerator:
             img = self.utils.gray2bgr(map_image)
 
             for shelf in self.shelfs:
-                shelfs_img = visual_tests.draw_shelf(img,shelf)
+                if shelf.id == "8" or shelf.id == "1":
+                    shelfs_img = visual_tests.draw_shelf(img,shelf)
             
             for rep_area in self.repulsive_areas:
-                shelfs_img = visual_tests.draw_roi(img,rep_area)
+                if rep_area.id == "8" or rep_area.id == "1":
+                    shelfs_img = visual_tests.draw_roi(img,rep_area)
             
             for position in self.full_trajectory:
                 i,j = self.utils.map2image(position[0],position[1])
@@ -89,15 +91,15 @@ class trajectoryGenerator:
                     if self.utils.is_inside_a_repulsive_area(self.repulsive_areas,(i,j)):
                         valid_waypoint = self.utils.push_waypoint((i,j),query_area,self.patch_sz)
                         object_position = (i,j)
-                        shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
-                        shelfs_img = visual_tests.draw_point(shelfs_img,object_position,(255,0,0))
+                        # shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
+                        # shelfs_img = visual_tests.draw_point(shelfs_img,object_position,(255,0,0))
                     else:
                         valid_waypoint = (i,j)
                         object_position = query_area.center
-                        shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
-                        shelfs_img = visual_tests.draw_point(shelfs_img,object_position,(255,0,0))
+                        # shelfs_img = visual_tests.draw_point(shelfs_img,valid_waypoint,(0,255,0))
+                        # shelfs_img = visual_tests.draw_point(shelfs_img,object_position,(255,0,0))
                
-                    shelfs_img = visual_tests.draw_arrow(shelfs_img,valid_waypoint,object_position,(0,0,255))
+                    # shelfs_img = visual_tests.draw_arrow(shelfs_img,valid_waypoint,object_position,(0,0,255))
             self.utils.show_img_and_wait_key("Wpoints Inside Shelfs Checks", shelfs_img) 
 
             self.utils.save_image(self.base_path + '/shelfs_check.jpg', shelfs_img)
@@ -300,9 +302,6 @@ class trajectoryGenerator:
         epsilon = 0.02 #around 1 degree
 
         theta = Utils.get_robot_obj_angle(curr_x,curr_y,curr_yaw,object_position)
-        print("curr_x,curr_y: ",curr_x,curr_y)
-        print("object_position: ", object_position)
-        print("ANGLE AT THE BEGINNING: ", Utils.rad2deg(theta))
         w_direction = 1 if abs(theta) >= Utils.pi()/2 else -1
 
         msg.angular.z = w_direction*0.2 #moving very slowly
@@ -311,14 +310,6 @@ class trajectoryGenerator:
             self.cmd_vel_pub.publish(msg)
             curr_yaw = self.pose.pose.pose.orientation.z
             theta = Utils.get_robot_obj_angle(curr_x,curr_y,curr_yaw,object_position)
-            
-            
-        print("curr_yaw AT THE END : ", Utils.rad2deg(curr_yaw))
-
-        print("diff AT THE END : ", Utils.rad2deg(theta) - Utils.rad2deg(curr_yaw))
-            
-        
-        print("ANGLE AT THE END: ", Utils.rad2deg(theta))
 
         capture_side = "left" if w_direction == -1 else "right"
 
@@ -386,6 +377,7 @@ class trajectoryGenerator:
         print("TIME>", rospy.get_time())
         print("TOP>", self.tl_rgb_img_msg.header.stamp.to_time())
         print("MIDDLE>", self.ml_rgb_img_msg.header.stamp.to_time())
+        print("BOT>", self.bl_rgb_img_msg.header.stamp.to_time())
         print("BOT>", self.bl_rgb_img_msg.header.stamp.to_time())
         rospy.logdebug("Saved waypoint number " + str(self.goal_cnt) + " images and pose.")
 
