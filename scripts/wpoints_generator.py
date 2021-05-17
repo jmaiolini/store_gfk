@@ -16,6 +16,41 @@ import message_filters
 from utils import Utils
 import visual_tests
 from cameras import CamerasParams
+import cv2
+import os
+import json
+
+traj_planimetry_width = 42.5
+traj_planimetry_height = 32.4
+traj_img_width = 1602
+traj_img_height = 1210
+
+
+blender_store_width = 45.0
+blender_store_height = 34.6
+blender_img_width = 1192
+blender_img_height = 918
+
+traj_m_px_ratio_x = traj_planimetry_width / (traj_img_width-22-30) #have to correct them
+traj_m_px_ratio_y = traj_planimetry_height / (traj_img_height-24-26)
+traj_store_width = traj_img_width * traj_m_px_ratio_x #42.5
+traj_store_height = traj_img_height * traj_m_px_ratio_y #32.4 
+
+# store_width = blender_store_width
+# store_height = blender_store_height
+# img_width = blender_img_width
+# img_height = blender_img_height
+# m_px_ratio_x = blender_store_width / blender_img_width #TODO retrieve it from map yaml
+# m_px_ratio_y = blender_store_height / blender_img_height #TODO retrieve it from map yaml
+
+store_height = traj_store_height
+img_width = traj_img_width
+img_height = traj_img_height
+m_px_ratio_x = traj_m_px_ratio_x
+m_px_ratio_y = traj_m_px_ratio_y
+
+maps_x_ratio = 1.0
+maps_y_ratio = 1.0
 
 class trajectoryGenerator:
 
@@ -64,6 +99,7 @@ class trajectoryGenerator:
         if debug_mode == True :
             #visual_tests.run()
             #sys.exit(0)
+            ruuuun()
             
             #performing all the steps to send goal but just for visualization except the map shift
             self.utils.set_map_image() #to check if the given goal is good 
@@ -100,7 +136,10 @@ class trajectoryGenerator:
                         # shelfs_img = visual_tests.draw_point(shelfs_img,object_position,(255,0,0))
                
                     # shelfs_img = visual_tests.draw_arrow(shelfs_img,valid_waypoint,object_position,(0,0,255))
+            shelfs_img = visual_tests.draw_rect(shelfs_img,(380,170),(1170,905),(255,0,0,0.5),-1)
             self.utils.show_img_and_wait_key("Wpoints Inside Shelfs Checks", shelfs_img) 
+
+            
 
             self.utils.save_image(self.base_path + '/shelfs_check.jpg', shelfs_img)
             #The drawings are the following:
@@ -374,11 +413,7 @@ class trajectoryGenerator:
         self.utils.save_camera_metadata(path + str(self.goal_cnt) + '/top_camera.yaml',capture_time,top_cam_info)
         self.utils.save_camera_metadata(path + str(self.goal_cnt) + '/middle_camera.yaml',capture_time,middle_cam_info)
         self.utils.save_camera_metadata(path + str(self.goal_cnt) + '/bottom_camera.yaml',capture_time,bottom_cam_info)
-        print("TIME>", rospy.get_time())
-        print("TOP>", self.tl_rgb_img_msg.header.stamp.to_time())
-        print("MIDDLE>", self.ml_rgb_img_msg.header.stamp.to_time())
-        print("BOT>", self.bl_rgb_img_msg.header.stamp.to_time())
-        print("BOT>", self.bl_rgb_img_msg.header.stamp.to_time())
+
         rospy.logdebug("Saved waypoint number " + str(self.goal_cnt) + " images and pose.")
 
 
@@ -397,25 +432,6 @@ class trajectoryGenerator:
 
     def pose_cb(self,data):
         self.pose = data
-    
-    # def tl_rgb_img_cb(self, data):
-    #     self.tl_rgb_img_msg = data
-
-    # def tr_rgb_img_cb(self, data):
-    #     self.tr_rgb_img_msg = data
-
-    # def ml_rgb_img_cb(self, data):
-    #     self.ml_rgb_img_msg = data
-
-    # def mr_rgb_img_cb(self, data):
-    #     self.mr_rgb_img_msg = data
-
-    # def bl_rgb_img_cb(self, data):
-    #     self.bl_rgb_img_msg = data
-
-    # def br_rgb_img_cb(self, data):
-    #     self.br_rgb_img_msg = data
-
 
     def right_cameras_cb(self, top_img, middle_img, bottom_img):
 
@@ -455,6 +471,126 @@ class trajectoryGenerator:
             self.bl_rgb_img = self.bridge.imgmsg_to_cv2(bottom_img, "bgr8")
         except CvBridgeError as e:
             print(e) 
+
+
+def ruuuun():
+    filepath = '/home/majo/catkin_ws/src/store_gfk/trajectories/edeka/edeka_2.json'
+    img = read_image('/home/majo/catkin_ws/src/store_gfk/trajectories/edeka/map_ref.png')
+    data = dict()
+    if os.path.exists(filepath):
+        with open(filepath) as f:
+            data = json.load(f)
+
+    trajectory_meter = list()
+        
+    for coord in data["points"]: #dict type
+        new_coord = tranform_position( coord['x'], coord['y'])
+        trajectory_meter.append( new_coord )
+    last_wpoint = 0
+    counter = 0
+    color = (255,0,0)
+    for wpoint in trajectory_meter:
+        if counter <=28:
+            x,y = map2image(wpoint[0],wpoint[1])
+            if counter > 9:
+                color = (0,0,255)
+
+            if counter == 4  or counter == 6 or counter == 9:
+                x = x + 20
+
+            if counter == 5:
+                x = x + 35
+            
+            if counter == 8:
+                y = y + 20
+        
+            cv2.putText(img,str(counter),(x+20,y+20),cv2.FONT_HERSHEY_SIMPLEX,0.8,color,2)
+            draw_point(img,(x,y),color,5)
+            if last_wpoint != 0:
+                draw_line(img,(x,y),last_wpoint,color,2)
+            last_wpoint = (x,y)
+        counter = counter + 1
+    
+    counter = 10
+    color = (0,255,0)
+    x,y = map2image(trajectory_meter[9][0],trajectory_meter[9][1])
+    last_wpoint = (x+20,y)
+    new_x = 0
+    new_y = 0
+
+    ground_truth = list()
+    new_x, new_y = map2image(trajectory_meter[9][0],trajectory_meter[9][1])
+    ground_truth.append((new_x + 30, new_y - 80))
+    ground_truth.append((1170,750))
+    ground_truth.append((1300,880))
+    ground_truth.append((1370,725))
+    ground_truth.append((1490,735))
+    ground_truth.append((1485,700))
+    ground_truth.append((1492,498))
+    ground_truth.append((1356,546))
+    ground_truth.append((1185,532))
+    ground_truth.append((1102,346))
+
+    for wpoint in ground_truth:
+        cv2.putText(img,str(counter),wpoint,cv2.FONT_HERSHEY_SIMPLEX,0.8,color,2)
+        draw_point(img,wpoint,color,5)
+    
+        draw_line(img,wpoint,last_wpoint,color,2)
+        counter = counter + 1
+        last_wpoint = wpoint
+
+    show_img_and_wait_key("img",img)
+    save_image('/home/majo/catkin_ws/src/store_gfk/ground_truth.jpg',img)
+
+def save_image(filename,image):
+    cv2.imwrite(filename,image)
+
+def tranform_position(x_traj, y_traj):
+
+    x = maps_x_ratio * x_traj
+    y = maps_y_ratio * y_traj
+
+    x_map, y_map = map2image_meters(x,y) 
+
+    return ( x_map, y_map )
+
+def map2image_meters(p_x,p_y):
+    x = p_x
+    y = store_height - p_y
+    
+    return x,y
+
+def show_img_and_wait_key(window_name,img):
+    cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(window_name, int(1602/2), int(1210/2))
+    cv2.imshow(window_name, img)
+    cv2.waitKey(0)
+    cv2.destroyWindow(window_name)
+
+def read_image(filename, coding = 1):
+        return cv2.imread(filename,1)
+
+def save_image(filename,image):
+    cv2.imwrite(filename,image)
+
+def gray2bgr(image):
+    return cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+
+def bgr2gray(image):
+    return cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+
+def draw_point(img,pt,color=(0,0,255),thickness=3):
+    return cv2.circle(img,pt,thickness,color,-1)
+
+def draw_line(img,pt1,pt2,color=(0,0,255),thickness=3):
+    return cv2.line(img,pt1,pt2,color,thickness)
+
+def map2image(p_x,p_y):
+    x_img = int(p_x / m_px_ratio_x)
+    y_img = img_height - int(p_y / m_px_ratio_y)
+
+    return x_img,y_img
+
 
 def main():
     

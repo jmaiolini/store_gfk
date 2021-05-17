@@ -90,6 +90,9 @@ def run(robot_trajectory, filename, map_source):
 def draw_point(img,pt,color=(0,0,255),thickness=3):
     return cv2.circle(img,pt,thickness,color,-1)
 
+def draw_line(img,pt1,pt2,color=(0,0,255),thickness=3):
+    return cv2.line(img,pt1,pt2,color,thickness)
+
 def draw_robot(img,pt,radius,color):
     return cv2.circle(img,pt,int(radius),color,2)
 
@@ -108,4 +111,11 @@ def draw_shelf(img,shelf):
 def draw_roi(img,shelf):
     return cv2.rectangle(img,(shelf.x,shelf.y),(shelf.x+shelf.w,shelf.y+shelf.h),(0,255,0,0.5),2)
 
-
+def draw_rect(img,pt1,pt2,color=(0,255,0,0.5),filled=2):
+    alpha = 0.4
+    overlay = img.copy()
+    output = img.copy()
+    cv2.rectangle(overlay, pt1,pt2, (0, 0, 255), -1)
+    cv2.addWeighted(overlay, alpha, output, 1 - alpha,0, output)
+ 
+    return output

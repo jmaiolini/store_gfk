@@ -1,7 +1,7 @@
-# store_gfk
+# storeplanner
 
 ## Description
-This repository uses already available ROS robots and adds some cameras on them for retail applications.
+This repository contains ROS Code to manage planning in retail stores.
 ## Usage
 ### TIAGo-base
 * Follow the official installation of the robot [here](http://wiki.ros.org/Robots/PMB-2/Tutorials/Installation/PMB2Simulation) and install it into the ROS workspace.
